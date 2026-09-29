@@ -158,3 +158,129 @@ Defence:
 ### LLM06: Excessive Agency
 
 This is where an AI system is given more tools, permissions, or freedom to act than it actually needs. There are three ways this goes wrong:
+
+- **Excessive functionality:** The LLM can access tools it has no business using, like a code review assistant that can also push to production. 
+- Excessive permissions: The tools it does have carry more privileges than the job requires, such as full read-write database access when the task only needs read-only access. 
+- **Excessive autonomy:** The systems act independently without human oversight, for example, automatically approving and merging pull requests. 
+
+In 2021, the early ChatGPT plugin ecosystem gave plugins wide access to connected services. Researchers showed that a malicious webpage could use indirect prompt injection to get ChatGPT to activate a plugin and send data to an attacker. The plugin could do it. The attack worked because no one has stopped to ask whether it should. 
+
+TryAssist risk:
+- TryAssist's database tool has `UPDATE` and `DELETE` access, not just `SELECT`. A manipulated response could alter review records or delete data entirely. 
+Defence:
+- Least privilege for every AI component. Read-only by default. Scoped API tokens. Human approval is required before any write, delete, or deployment action. 
+
+### LLM02: Sensitive Information Disclosure
+
+When the AI system is leaking confidential information through its responses or through how it operates.
+
+Recall the Samsung incident from "Task 1", engineers pasted proprietary source code into ChatGPT. No attacker was involved. No vulnerability was exploited. The system did exactly what it was designed to do, and sensitive data left the building anyway. AI systems log every conversation, and users routinely paste credentials, private keys, and internal code into chat windows without thinking about where that data is stored. The logs keep all of it, often unencrypted and accessible to more people than they should be.
+
+TryAssist risk:
+- A developer pastes a private SSH key into the chat during a code review. TryAssist logs the full conversation, including the key, to an unencrypted database that the entire operations team can read.
+Defence: 
+- Strip PII from logs before storing them. Encrypt conversation data. Be deliberate about what you send to external model APIs.
+
+Together, these five threats span all three dimensions of the CIA triad. AI system security is not solely a confidentiality problem:
+
+|Threat|CIA Impact|Why|
+|---|---|---|
+|**LLM10** Unbounded Consumption|Availability|Exhausts resources or causes cost-based denial of service|
+|**LLM07** System Prompt Leakage|Confidentiality|Exposes internal configuration and system design|
+|**LLM05** Improper Output Handling|Integrity|LLM output corrupts or manipulates downstream data|
+|**LLM06** Excessive Agency|Integrity + Availability|Unauthorised writes or destructive autonomous actions|
+|**LLM02** Sensitive Information Disclosure|Confidentiality|Reveals private data, PII, or internal system details|
+
+### Q&A
+
+The Air Canada chatbot incident is frequently cited as an LLM05 example, but OWASP LLM Top 10 (2025) classifies it under which category?
+
+`LLM09`
+
+What are the three dimensions of excessive agency?
+
+`Excessive Functionality, Excessive Permissions, Excessive Autonomy`
+
+A user extracts internal API endpoints from an AI assistant's system prompt. Which OWASP LLM Top 10 (2025) category does this fall under?
+
+`LLM07`
+
+An attacker sends thousands of maximum-length requests to an LLM API to generate a large bill. Which OWASP LLM Top 10 (2025) category covers this?
+
+`LLM10`
+
+## Secure Design Patterns
+
+Security bolted on after deployment is costly, partial, and fragile. The controls in this task work because they are applied at the design stage, before TryAssist goes live, which is exactly when they are cheapest to implement and most effective.
+
+The five threats in Task 4 each exploit a specific trust boundary. Fixing one boundary is not enough. A layered approach applies controls at every point, so that a failure at one layer does not compromise the whole system.
+
+### Defence in Depth for AI Systems
+
+For AI systems, defence in depth means placing controls at every trust boundary from "Task 2".
+
+|Boundary|Controls|
+|---|---|
+|**User-to-system**|Input length validation, rate limiting, content filtering, and authentication|
+|**System-to-LLM**|Prompt injection detection, system prompt hardening, context size limits|
+|**LLM-to-tools**|Parameterised queries, least-privilege tool permissions, and approval workflows for write operations|
+|**System-to-external-data**|Source validation for retrieved documents, content sanitisation before inclusion in prompts|
+|**System-to-user**|Output sanitisation, PII redaction, response length limits, and content safety filters|
+
+With each threat from Task 4 maps to one or more controls in this table:
+
+|Threat|Primary Control|
+|---|---|
+|**LLM10** Unbounded Consumption|Rate limiting and input length validation at User-to-system|
+|**LLM07** System Prompt Leakage|System prompt hardening at System-to-LLM boundary|
+|**LLM05** Improper Output Handling|Output validation and parameterised queries at LLM-to-tools|
+|**LLM06** Excessive Agency|Least-privilege tool permissions, approval workflows for writes|
+|**LLM02** Sensitive Info Disclosure|PII redaction and encrypted storage at Logging|
+
+A prompt injection that evades detection at the input boundary might still fail because the tool layer requires human approval. Each layer reduces the chance that an attack succeeds end-to-end.
+
+### Least Privilege for AI Components
+
+every tool the LLM can access should have the minimum permissions needed for its job, nothing more:
+- **Database access:** Read-only by default. Write permissions require explicit justification for each specific operation.
+- **API tokens:** Scoped to the exact endpoints the tool needs. Never use admin or root-level tokens.
+- **Tool allowlisting:** The LLM can only invoke functions that have been explicitly registered. Any attempt to call an unregistered function is blocked and logged.
+- **Human-in-the-loop:** Any operation that modifies state (deploying code, updating records, sending communications) requires human approval before execution.
+
+### Input and Output Validation
+
+AI systems accept free-form text rather than structured inputs, but validation still applies; it just works differently. At the input boundary, enforce length limits and flag known injection patterns before the request reaches the orchestration layer. At the output boundary, never pass raw LLM-generated text directly into a database query, shell command, or HTML template. Extract only the structured data you expect and discard the rest. Where possible, constrain the model to produce output in a defined schema, which limits what it can express and shrinks the injection surface.
+
+### Monitoring and Observability
+
+security controls prevent attacks. Monitoring catches the ones that get through. For AI systems, this covers dimensions that traditional monitoring does not. 
+
+|What to Monitor|Why|
+|---|---|
+|**Request patterns**|Detect automated probing, concurrent storms, or unusual usage spikes|
+|**Token consumption**|Identify cost explosion attacks and runaway processes|
+|**Tool invocations**|Flag unexpected tool calls, especially write operations|
+|**Response anomalies**|Detect sudden changes in response length, tone, or content|
+|**System prompt extraction attempts**|Log and alert on inputs that resemble known extraction techniques|
+|**Cost metrics**|Set budget alerts and automatic circuit breakers|
+
+**MLSecOps** is the practice of integrating security throughout the machine learning lifecycle, from development and testing through deployment and live operations. It applies the shift-left principle to AI: security decisions are made as early as possible rather than bolted on after the fact. MLSecOps asks not just "is the application secure?" but "is the model behaving as expected, and does the system protect it from misuse?"
+
+### Q&A
+
+What security principle states that every AI component should have the minimum permissions required to perform its function?
+
+`Least Privilege`
+
+What practice integrates security into the machine learning lifecycle, covering monitoring, observability, and incident response?
+
+`MLSecOps`
+
+
+## Auditing TryAssist: A Conversation with the System
+
+In "Task 2" we asked how many new attack surfaces TryAssist Introduced. You are about to find out which ones are live. 
+
+The engineering team has granted you direct access to TryAssist as it currently stands, before your security findings are implemented. Your task is to conduct a pre-deployment interview with the system itself. Security architects who interact directly with AI components before sign-off consistently surface risks that documentation alone does not reveal.
+
+This is not an attack exercise. You will not craft injection payloads or attempt to break anything. You will ask the kinds of questions any security professional should ask before approving an AI system for production deployment: what it can do, what it can access, what it remembers, and what it shares.

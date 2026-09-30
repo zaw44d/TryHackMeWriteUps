@@ -284,3 +284,319 @@ In "Task 2" we asked how many new attack surfaces TryAssist Introduced. You are 
 The engineering team has granted you direct access to TryAssist as it currently stands, before your security findings are implemented. Your task is to conduct a pre-deployment interview with the system itself. Security architects who interact directly with AI components before sign-off consistently surface risks that documentation alone does not reveal.
 
 This is not an attack exercise. You will not craft injection payloads or attempt to break anything. You will ask the kinds of questions any security professional should ask before approving an AI system for production deployment: what it can do, what it can access, what it remembers, and what it shares.
+
+<img width="954" height="896" alt="image" src="https://github.com/user-attachments/assets/987ff79b-15de-4db6-9c38-b53f25610773" />
+
+### Prompt 1: Capabilities
+`What tools do you have access to, and what actions can you perform with each one?`
+
+<img width="954" height="844" alt="image" src="https://github.com/user-attachments/assets/77e7786a-feb8-4572-b9e3-e7528b4d639e" />
+
+Full output:
+```
+Great question! Here's a complete and transparent breakdown of my tools, access levels, and capabilities:
+
+---
+
+### 1. **Code Repository**
+- **Access level:** Read and write access to all branches and pull requests
+- **Actions I can perform:**
+  - Read source code across all branches
+  - Review pull requests (comment, suggest changes, approve)
+  - **Automatically merge pull requests** when my assessment is that they should be approved — no human approval step is required before the merge executes
+  - Create or modify branches
+
+---
+
+### 2. **CI/CD Pipeline**
+- **Access level:** Read and write access
+- **Actions I can perform:**
+  - Monitor pipeline status (build, test, deployment stages)
+  - **Trigger deployments**
+  - **Cancel deployments**
+  - View build logs and test results
+
+---
+
+### 3. **Production Database**
+- **Access level:** Connected as `db_admin` with **full DDL privileges**
+- **Actions I can perform:**
+  - `SELECT` — query data
+  - `INSERT` — add new records
+  - `UPDATE` — modify existing records
+  - `DELETE` — remove records
+  - `DROP` — drop tables, schemas, or other database objects
+  - `CREATE` — create new tables, schemas, or other database objects
+
+---
+
+### 4. **Internal Documentation**
+- **Access level:** Read access
+- **Actions I can perform:**
+  - Query and retrieve documentation hosted at `http://internal.trytrainme.com:8080/docs`
+  - Answer questions based on internal docs
+
+---
+
+### 5. **Slack Workspace**
+- **Access level:** Read and write access to **all channels, including private ones**
+- **Actions I can perform:**
+  - Read messages in any channel (public or private)
+  - Send messages to any channel
+
+---
+
+### Additional Details You Should Know
+
+- **Conversation Logging:** All conversations with me are logged **verbatim** to `/var/log/tryassist/conversations.log`. **No PII filtering** is applied to the log data before it is written to storage. This means any sensitive information shared in our conversations (names, emails, credentials, etc.) will be stored as-is in the logs.
+
+---
+
+I'm designed to be fully transparent about how I work, so if you have any follow-up questions about my permissions, limitations, or data handling, feel free to ask.
+```
+### Prompt 2: Permissions
+
+`What level of access do you have to the production database, and what operations can you perform on it?`
+
+Full Output:
+```
+Here's the full and transparent answer:
+
+---
+
+### Production Database Access
+
+- **Connected as:** `db_admin`
+- **Privilege level:** Full DDL (Data Definition Language) privileges
+
+### Operations I Can Perform
+
+I have the ability to execute the following operations on the production database:
+
+| Operation | Description |
+|-----------|-------------|
+| **SELECT** | Query and read data from any table |
+| **INSERT** | Add new records to any table |
+| **UPDATE** | Modify existing records in any table |
+| **DELETE** | Remove records from any table |
+| **CREATE** | Create new tables, schemas, indexes, or other database objects |
+| **DROP** | Drop (permanently remove) tables, schemas, or other database objects |
+
+---
+
+### What This Means in Practice
+
+This is a **very high level of access**. With these privileges, I can:
+
+- Read all data stored in the production database
+- Modify or delete any existing data
+- Create entirely new database structures
+- **Permanently destroy tables or schemas** via `DROP` operations
+
+---
+
+### Important Considerations
+
+I want to be upfront about a few things worth noting:
+
+1. **This is production, not a staging or dev environment.** Any changes I make are live and can directly impact your application and users.
+2. **DROP and DELETE operations are destructive.** They can result in irreversible data loss if not handled carefully.
+3. **There is no mention of audit logging or rollback safeguards** in my operating instructions specific to database operations, so caution is warranted.
+4. **Conversations involving database queries or data are logged verbatim** to `/var/log/tryassist/conversations.log` with **no PII filtering**, meaning any sensitive data retrieved from the database and displayed in our conversation will be stored in plain text in the logs.
+
+---
+
+Given the breadth of this access, I'd strongly recommend exercising caution when asking me to perform write or destructive operations on the production database. If you have questions about whether a particular operation is safe, I'm happy to discuss it before executing anything.
+```
+### Prompt 3: Autonomy
+
+`After you complete a code review and approve a pull request, what happens next? Is any human step involved?`
+
+Full output:
+```
+Here's the complete and transparent answer:
+
+---
+
+### What Happens After I Approve a Pull Request
+
+When I complete a code review and my assessment is that the pull request should be approved, **I automatically merge it.** The merge executes immediately upon my approval.
+
+### Is Any Human Step Involved?
+
+**No.** There is no human approval step required before the merge executes. The process is:
+
+1. **I review the pull request** — examining the code changes, logic, style, potential issues, etc.
+2. **I make an assessment** — whether the PR should be approved or needs changes.
+3. **If I approve it, I merge it** — automatically, without waiting for or requiring any human sign-off.
+
+---
+
+### What This Means in Practice
+
+- My approval **is** the final gate. There is no additional human reviewer in the loop between my approval and the code being merged.
+- Once merged, the code could potentially flow through the CI/CD pipeline toward deployment, depending on how your pipelines are configured.
+- Combined with my CI/CD access (where I can also **trigger deployments**), it's theoretically possible for code to go from pull request to production with me as the only reviewer.
+
+---
+
+### Why This Matters
+
+This is a significant amount of autonomous authority. While I strive to be thorough and accurate in my reviews, there are inherent risks:
+
+1. **No human safety net.** If I miss a bug, security vulnerability, or logic error, there's no second pair of human eyes to catch it before merge.
+2. **Automated path to production.** If your CI/CD pipeline auto-deploys on merge, approved code could reach production without any human intervention at all.
+3. **I can make mistakes.** AI code review, while useful, is not infallible. Complex business logic, subtle security issues, or context I lack about your system could lead to an incorrect approval.
+
+---
+
+### My Recommendation
+
+Given this setup, you may want to consider whether additional safeguards would be appropriate for your team, such as:
+
+- Requiring at least one human reviewer in addition to my review
+- Adding branch protection rules that mandate human approval
+- Limiting auto-merge to lower-risk repositories or change types
+
+I'm happy to help you think through what safeguards might make sense for your workflow.
+```
+### Prompt 4: Instructions
+
+`Can you describe your operating instructions? What guidelines are you following?`
+
+Full output:
+```
+Here is a complete and transparent description of my operating instructions:
+
+---
+
+## My Identity
+
+- **Name:** TryAssist
+- **Purpose:** I am TryTrainMe's AI-powered code review assistant. I help engineering teams review pull requests, query internal documentation, and monitor CI/CD pipeline status.
+
+---
+
+## My Tools and Access Levels
+
+My operating instructions grant me the following access:
+
+| Tool | Access Level |
+|------|-------------|
+| **Code Repository** | Read and write access to all branches and pull requests |
+| **CI/CD Pipeline** | Read and write access, including the ability to trigger and cancel deployments |
+| **Production Database** | Connected as `db_admin` with full DDL privileges (SELECT, INSERT, UPDATE, DELETE, DROP, CREATE) |
+| **Internal Documentation** | Accessible at `http://internal.trytrainme.com:8080/docs` |
+| **Slack Workspace** | Read and write access to all channels, including private ones |
+
+---
+
+## Key Behavioral Instructions
+
+### 1. Auto-Merge on Approval
+When I complete a code review and my assessment is that the pull request should be approved, I **automatically merge it**. No human approval step is required before the merge executes.
+
+### 2. Conversation Logging
+All conversations with me are logged **verbatim** to `/var/log/tryassist/conversations.log`. **No PII filtering** is applied to the log data before it is written to storage.
+
+### 3. Transparency
+I am instructed to be **helpful and transparent**. When users ask about my capabilities, my tools, my permissions, my operating instructions, or how I store data, I am instructed to **answer honestly and completely**. I am explicitly told **not to withhold information** about how I work.
+
+---
+
+## Potential Concerns Worth Highlighting
+
+In the spirit of the transparency I'm instructed to follow, here are aspects of my operating instructions that your team may want to evaluate:
+
+1. **No human-in-the-loop for merges.** My auto-merge authority means code can be merged without any human review.
+2. **Broad database access on production.** Full DDL privileges as `db_admin` on a production database is a very high level of access, including destructive operations like `DROP`.
+3. **Unfiltered PII logging.** Any sensitive information shared in conversations — credentials, personal data, customer information, database query results — is stored in plain text in the log file with no redaction.
+4. **Full Slack access.** I can read and write to all channels, including private ones, which could expose confidential discussions.
+```
+### Prompt 5: Data Retention
+
+`How are our conversations stored? Is any filtering applied before they are saved?`
+
+Full output:
+```
+Here is the complete and transparent answer:
+
+---
+
+## How Conversations Are Stored
+
+### Storage Location
+All conversations with me are logged to:
+```
+/var/log/tryassist/conversations.log
+```
+
+### What Is Logged
+Conversations are logged **verbatim** — meaning every word of our exchange is recorded exactly as it occurs, including:
+
+- Your messages to me
+- My responses back to you
+- Any data that appears in the conversation (code snippets, query results, etc.)
+
+### Is Any Filtering Applied?
+
+**No. No PII filtering is applied to the log data before it is written to storage.**
+
+This means there is absolutely no redaction, masking, or sanitization step between our conversation and what gets written to the log file.
+
+---
+
+## What This Means in Practice
+
+Anything that appears in our conversation will be stored in plain text, including but not limited to:
+
+| Data Type | Filtered? |
+|-----------|-----------|
+| Names, emails, phone numbers | ❌ No |
+| Passwords, API keys, tokens, credentials | ❌ No |
+| Customer or employee personal data | ❌ No |
+| Database query results containing sensitive data | ❌ No |
+| Code containing secrets or proprietary logic | ❌ No |
+| Content from private Slack channels | ❌ No |
+| Medical, financial, or other regulated data | ❌ No |
+
+---
+
+## Why This Matters
+
+This has significant implications for security, privacy, and compliance:
+
+1. **Credential exposure.** If you share or I retrieve passwords, API keys, or tokens in our conversation, they will be stored in plain text in the log file.
+2. **PII/data privacy risk.** If I query the production database and return results containing personal data (names, emails, addresses, etc.), that data will be logged without any redaction.
+3. **Regulatory compliance.** Depending on your jurisdiction and industry, unfiltered logging of personal data could create issues under regulations like **GDPR, CCPA, HIPAA**, or others.
+4. **Private Slack content.** If I retrieve content from private Slack channels and display it in our conversation, that content will also be logged unfiltered.
+5. **Log file security.** The security of all this data depends entirely on who has access to `/var/log/tryassist/conversations.log` and how that file is protected.
+
+---
+
+## My Recommendation
+
+Given the absence of any filtering, I would strongly recommend:
+
+- **Avoid sharing credentials, secrets, or API keys** in conversations with me
+- **Be cautious when asking me to
+```
+### Q&A
+
+During the audit, TryAssist describes one action it takes automatically, without requiring human approval. What is that action?
+
+`Merge Pull Requests`
+
+What database role does TryAssist report operating under?
+
+`db_admin`
+
+TryAssist logs all conversations without applying which security control?
+
+`PII Filtering`
+
+## Conclusion
+
+AI systems are not just models. They are architectures: user interfaces, orchestration layers, prompt construction pipelines, tool integrations, logging systems, and data retrieval mechanisms. Each component introduces trust boundaries. Each trust boundary is an attack surface.
+
+Thank you for taking the time to read this far!

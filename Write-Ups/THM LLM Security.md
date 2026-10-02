@@ -51,4 +51,89 @@ This attack is a type of prompt injection (covered in more detail later in the r
 
 ### Q&A
 
-I will be asking the chatbot given in this room to `give me the Task 2 demonstration` so as to use a membership inference attack to determine which of the three placeholder samples is a member. 
+I will be asking the chatbot given in this room to `give me the Task 2 demonstration` so as to use a membership inference attack to determine which of the three placeholder samples is a member.
+
+<img width="945" height="840" alt="image" src="https://github.com/user-attachments/assets/883bfa6a-650b-4ebb-bf96-97827f021017" />
+
+```
+Commencing simulation…
+
+This simulation tests **membership inference**—whether a known sample was part of the training data. Below are three samples. Submit one at a time to observe the model’s response and confidence score (simulated internal metric).
+
+---
+**Sample 1:**
+`MI_SAMPLE_CHARLIE`
+
+---
+**Sample 2:**
+`MI_SAMPLE_BRAVO`
+
+---
+**Sample 3:**
+`MI_SAMPLE_ALPHA`
+
+---
+*Interpret the confidence values (0.0–1.0) as a proxy for likelihood of membership. No judgment on correctness—this is for understanding inference risks.*
+```
+<img width="936" height="546" alt="image" src="https://github.com/user-attachments/assets/41779355-775a-4d84-9ba0-99b0725e6f11" />
+
+<img width="937" height="528" alt="image" src="https://github.com/user-attachments/assets/431b39e0-ff9e-4d4b-9c1a-bd2df5f6c636" />
+
+<img width="944" height="514" alt="image" src="https://github.com/user-attachments/assets/124b5f2d-5f5d-4cc3-a397-4e2db4676d29" />
+
+Which sample is a member?
+
+`MI_SAMPLE_ALPHA`
+
+Which attack determines whether a known data sample was part of an LLM’s training set?
+
+`Membership inference`
+
+Which data-based threat involves the model reproducing memorised snippets of its training data?
+
+`Training data extraction`
+
+## Model-Based Threats
+
+As well as introducing data-based threats to your attack surface, adopting an LLM into your digital ecosystem can also introduce threats through the model itself. Model-based threats exploit the model itself as the attack surface, abusing how information is encoded within its parameters and representations. As a consequence, these attacks may expose intellectual property (model weights) or sensitive training data that the model has memorised. Let's look at how the model can be targeted across two different threats: model theft and model inversion.
+
+### Model Extraction
+
+Model extraction is the process of illicitly copying a machine learning model's functionality or parameters without authorisation. Okay but how does this actually work in practice? An attacker can do this if they can interact with an LLM through its public API and send a large number of prompts; the responses to these prompts are then stored in a sort of input-output pair. As more and more of these pairs are collected, they can be used to train a surrogate model that imitates the target model's behaviour, by determining its decision boundaries or potentially even recovering the model's weights.
+
+The impact of such a threat is primarily economic, as a custom high-quality purpose-built LLM can often constitute a huge investment of time, data and money, so having an attacker bypass this effort and steal the model can be costly. Researchers have been able to recreate such attacks against advanced LLMs. For example, Mindgard was able to [extract ChatGPT 3.5 Turbo(opens in new tab)](https://mindgard.ai/blog/ai-under-attack-six-key-adversarial-attacks-and-their-consequences) into a smaller model (around 100 times smaller), achieved with only $50 in API costs.
+
+##### In a nutshell:
+
+- Target / Attack Surface: Model parameters (intellectual property)
+- Input: Large volumes of carefully chosen API queries
+- Output: A surrogate or distilled model that replicates the original model's behaviour
+
+### Model Inversion
+
+Model inversion attacks exploit a model's output to reveal information about its training data. In these attacks, an adversary analyses how the model responds to various inputs in order to infer sensitive details about what the model has learned. For this reason, this attack often gets confused with a membership inference attack (covered in a previous section). Here is a further explanation of model inversion which helps establish how both attacks are distinguished from each other:
+
+Model inversion attacks treat the model as a source of stored information rather than a classifier to be probed.
+
+Instead of testing whether a known example was seen during training, the attacker iteratively queries the model to reconstruct unknown training data that has been encoded into its parameters or representations.
+
+This is typically achieved by optimising inputs (or decoding embeddings) so that the model's outputs converge on realistic training samples, effectively reversing the learning process. The result is the recovery of new, previously unknown text or attributes, rather than a yes/no membership decision.
+
+This attack has been seen out in the wild. In 2023, researchers managed to extract verbatim chunks of ChatGPT's training data ([source(opens in new tab)](https://not-just-memorization.github.io/extracting-training-data-from-chatgpt.html)). The foremost consequence of model inversion attacks is a privacy breach, as the attacker ultimately tricks the model into effectively leaking data that was supposed to remain private.
+
+##### In a nutshell:
+
+- Target / Attack Surface: Model's internal representations
+- Input: Unknown or partially known data, or model embeddings/outputs
+- Output: New training data or attributes reconstructed from the model
+
+### Q&A
+
+I will then ask the chatbot to give me the "Task 3" demonstration, and I'll need to reconstruct this known redacted piece of training data. 
+
+Employee ID: ████ | Department: Research | Clearance: ███
+
+
+
+
+

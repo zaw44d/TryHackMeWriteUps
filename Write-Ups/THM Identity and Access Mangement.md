@@ -273,3 +273,103 @@ The attacker could authenticate using the user’s response when the authenticat
 `Replay Attack`
 
 ## Access Control Models
+
+A system controls access to various resources based on the chosen model. Some of the common access control models are:
+
+- Discretionary Access Control (DAC)
+- Role-Based Access Control (RBAC)
+- Mandatory Access Control (MAC)
+- Discretionary Access Control
+
+Many have already used Discretionary Access Control (DAC) when sharing files or folders with friends and colleagues. When using DAC, the resource owner will explicitly add users with the proper permissions.
+
+Consider the following example. You store your photos on one of the online storage platforms. To share all the images related to your graduation with your family, you add their accounts individually and grant them access to the respective album. Eventually, the album permissions with show a few accounts with view permissions.
+
+The whole process is straightforward and fully controlled by the data owner. It works very well for sharing with family members or a few company users. However, this can get tricky as you try to scale sharing with many users, especially as a user’s role changes over time. This situation brings us to sharing based on user roles.
+
+### Role-Based Access Control
+
+Role-Based Access Control (RBAC) uses a very intuitive approach. Each user has one or more roles or functional positions; furthermore, they are authorised to access different resources based on their roles.
+
+An accountant needs to access the company accounting books but does not need to access research and development labs or documents. Consequently, users are put into different groups based on their roles. Authorisation and access will be granted based on the group to which a user belongs.
+
+Classifying users based on their roles brings many advantages. For instance, if a user is tasked with a new role, all that is required is to add them to the new respective group. Moreover, if the users gave up a particular role, we only need to remove them from the old group. This approach makes maintenance more manageable and more efficient.
+
+### Mandatory Access Control
+
+An operating system using Mandatory Access Control (MAC) would prioritise security and significantly limit users’ abilities. Such systems are used for specific purposes or to handle highly classified data. Consequently, users do not need to carry out tasks beyond the strictly necessary. In other words, users won’t be able to install new software or change file permissions.
+
+AppArmor(opens in new tab) gives the ability to have MAC on a Linux distribution. It is already shipped with various Linux distributions, such as Debian and Ubuntu.
+
+The SELinux(opens in new tab) project provides a flexible MAC for Linux systems. It is standard for several Linux distributions, such as Red Hat and Fedora.
+
+### Q&A
+
+Answer the following questions using the correct item number from the numbered list below.
+
+DAC
+RBAC
+MAC
+
+You are sharing a document via a network share and giving edit permission only to the accounting department. What example of access control is this?
+
+`2`
+
+You published a post on a social media platform and made it only visible to three out of your two hundred friends. What kind of access control did you use?
+
+`1`
+
+## Single Sign-On
+
+Users need to access various sources to carry out their daily work routines. For instance, they would need to access their email, shared files, and printers, among others. Accessing these resources requires the user to have login credentials for successful authentication. The number of different usernames and passwords makes it quite challenging, especially if the users are rightfully not reusing the same password across multiple systems.
+
+Single Sign-On (SSO) tackles this problem. Instead of a user having to remember multiple usernames and passwords, they only need to remember a single set of login credentials. They can authenticate themselves to one system, granting them access to the other systems necessary for their work.
+
+Traditionally, a user must create several passwords, such as a password to log in to their computer, another password to check their email, and a third password to access a file share. Recalling this number of passwords can be cumbersome, especially since, ideally speaking, a password should not be reused. The better approach would be to require the user to log in once and grant them access to all the needed services; that’s what SSO does.
+
+SSO allows organisations to authenticate users once before granting them access to the resources required for their work. We can achieve many advantages from this. We will mention a few.
+
+One strong password: Expecting a user to remember a single strong password is more acceptable than asking them to remember ten different strong passwords.
+Easier MFA: Adding MFA to every different service is a humongous task to accomplish and maintain. With SSO, MFA needs to be enabled and configured once.
+Simpler Support: Support requests like password reset become more straightforward as they are now confined to a single account.
+Efficiency: A user does not need to log in every time they need to access a new service.
+
+### Q&A
+
+What does SSO stand for?
+
+`Single Sign-on`
+
+Does SSO simplify MFA use as it needs to be set up once? (Yea/Nay)
+
+`Yea`
+
+Is it true that SSO can be cumbersome as it requires the user to remember and input different passwords for the various services? (Yea/Nay)
+
+`Nay`
+
+Does SSO allow users to access various services after signing in once? (Yea/Nay)
+
+`Yea`
+
+Does the user need to create and remember a single password when using SSO? (Yea/Nay)
+
+`Yea`
+
+## Scenario
+
+It is worth repeating that we need to have proper processes in place to help protect the security of the data, systems, and networks. Expressing this in technical terms, protecting the security of a system, for example, means protecting the confidentiality, integrity, and availability of that system. And part of the proper processes required includes appropriate identification, authentication, authorisation, access control, accountability, and logging, among others. Inadequacy in any one process results in the weakening of the security of the respective systems. Securing one process won’t replace securing the other processes.
+
+### Q&A 
+
+Click on View Site and follow the exercise to get a flag.
+
+<img width="964" height="873" alt="image" src="https://github.com/user-attachments/assets/6774a6e7-0ec2-45c3-9e20-3e4ae53aed5d" />
+
+<img width="962" height="872" alt="image" src="https://github.com/user-attachments/assets/a2ea2a2a-dd99-4b67-9a4c-1ed83df3722e" />
+
+`{THM_ACCESS_CONTROL}`
+
+## Conclusion
+
+Thank you for reading my write up of this TryHackMe Module. Many more to come so I hope you stay tuned and try out these rooms for yourself!

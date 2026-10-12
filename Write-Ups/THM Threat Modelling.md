@@ -104,3 +104,398 @@ What diagram describes and analyses potential threats against a system or applic
 `Attack Tree`
 
 ## Modelling with MITRE ATT&CK
+
+MITRE ATT&CK (Adversarial Tactics, Techniques, and Common Knowledge) is a comprehensive, globally accessible knowledge base of cyber adversary behaviour and tactics. Developed by the MITRE Corporation, it is a valuable resource for organisations to understand the different stages of cyber attacks and develop effective defences.
+
+The ATT&CK framework is organised into a matrix that covers various tactics (high-level objectives) and techniques (methods used to achieve goals). The framework includes descriptions, examples, and mitigations for each technique, providing a detailed overview of threat actors' methods and tools.
+
+For a quick example, let's examine one of the techniques in the framework - [Exploit Public-Facing Application](https://attack.mitre.org/techniques/T1190/).
+
+As you can see in the provided link, the page contains five significant sections, namely:
+
+1. **Technique Name and Details**
+	Information such as name, detailed explanation of the technique, types of data or logs that can help or detect, and platforms (Windows, MacOS, Linux) relevant to the technique.
+2. **Procedure Examples**
+	Real-world examples of how threat actors have employed the technique in their adversarial operations.
+3. **Mitigations**  
+	Recommended security measures and best practices to protect against the technique.
+4. **Detections** 
+	Strategies and indicators that can help identify the technique, as well as potential challenges in detecting the technique.
+5. **References**
+	External sources, reports, and articles that provide additional information, context, or examples related to the technique.
+
+### Applying MITRE ATT&CK in Threat Modelling Process
+
+﻿MITRE ATT&CK can be integrated into our threat modelling process by mapping the identified threats and vulnerabilities to the tactics and techniques described in the ATT&CK Framework. We can insert a new entry in our methodology after the "**Identify Threats**" step.
+
+- Identify Threats
+    Identify potential threats that may impact the identified assets, such as cyber attacks, physical attacks, social engineering, and insider threats.
+    
+- **Map to MITRE ATT&CK** 
+    Map the identified threats to the corresponding tactics and techniques in the MITRE ATT&CK Framework. For each mapped technique, utilise the information found on the corresponding ATT&CK technique page, such as the description, procedure examples, mitigations, and detection strategies, to gain a deeper understanding of the threats and vulnerabilities in your system.
+
+Incorporating the framework in our threat modelling process ensures a comprehensive understanding of the potential security threats. It enables a better application of countermeasures to reduce the overall risk to your organisation.
+
+### Utilising MITRE ATT&CK for Different Use Cases
+
+Aside from incorporating MITRE ATT&CK in a threat modelling process, MITRE ATT&CK can be used in various cases depending on your organisation's needs. To wrap up this task, here is a list of some use cases for utilising this framework.
+
+1. Identifying potential attack paths based on your infrastructure
+    
+    Based on your assets, the framework can map possible attack paths an attacker might use to compromise your organisation. For example, if your organisation uses Office 365, all techniques attributed to this platform are relevant to your threat modelling exercise.
+    
+2. Developing threat scenarios
+    
+    MITRE ATT&CK has attributed all tactics and techniques to known threat groups. This information can be leveraged to assess your organisation based on threat groups identified to be targeting the same industry.
+    
+3. Prioritising vulnerability remediation
+    
+    The information provided for each MITRE ATT&CK technique can be used to assess the significant impact that may occur if your organisation experiences a similar attack. Given this, your security team can identify the most critical vulnerabilities to address.
+    
+
+Note that the usage of this framework is not limited to the provided use cases above. It is still under your discretion how to utilise the information provided by the framework effectively.
+
+### Q&A
+
+What is the technique ID of "Exploit Public-Facing Application"?
+
+`T1190`
+
+Under what tactic does this technique belong?
+
+`Initial Access`
+
+## Mapping with ATT&CK Navigator
+
+### Q&A
+
+Using the MITRE ATT&CK Navigator, answer the questions below.
+
+How many MITRE ATT&CK techniques are attributed to APT33?
+
+`31`
+
+Upon applying the IaaS platform filter, how many techniques are under the Discovery tactic?
+
+`13`
+
+## Dread Framework
+
+The DREAD framework is a risk assessment model developed by Microsoft to evaluate and prioritise security threats and vulnerabilities. It is an acronym that stands for:
+
+|**DREAD**|**Definition**|
+|---|---|
+|**Damage**|The potential harm that could result from the successful exploitation of a vulnerability. This includes data loss, system downtime, or reputational damage.|
+|**Reproducibility**|The ease with which an attacker can successfully recreate the exploitation of a vulnerability. A higher reproducibility score suggests that the vulnerability is straightforward to abuse, posing a greater risk.|
+|**Exploitability**|The difficulty level involved in exploiting the vulnerability considering factors such as technical skills required, availability of tools or exploits, and the amount of time it would take to exploit the vulnerability successfully.|
+|**Affected Users**|The number or portion of users impacted once the vulnerability has been exploited.|
+|**Discoverability**|The ease with which an attacker can find and identify the vulnerability considering whether it is publicly known or how difficult it is to discover based on the exposure of the assets (publicly reachable or in a regulated environment).|
+
+The categories are commonly phrased with the following questions to ingest the definitions provided above quickly:
+
+- **Damage** - How bad would an attack be?
+- **Reproducibility** - How easy is it to reproduce the attack?
+- **Exploitability** - How much work is it to launch the attack?
+- **Affected Users** - How many people will be impacted?
+- **Discoverability** - How easy is it to discover the vulnerability?
+
+Using the questions above assists in understanding each category and applying it in a risk-assessment context.
+
+### Dread Framework Guidelines
+
+As mentioned above, the DREAD framework is an opinion-based model that heavily relies on an analyst's interpretation and assessment. However, the reliability of this framework can still be improved by following some guidelines:
+
+1. Establish a standardised set of guidelines and definitions for each DREAD category that provides a consistent understanding of how to rate vulnerabilities. This can be supported by providing examples and scenarios to illustrate how scores should be assigned under various circumstances.
+2. Encourage collaboration and discussion among multiple teams. Constructive feedback from different members aids in justifying the assigned scores, which can lead to a more accurate assessment.
+3. Use the DREAD framework with other risk-assessment methodologies and regularly review and update the chosen methods and techniques to ensure they remain relevant and aligned with the organisation's needs.
+
+By ensuring that these guidelines are strictly followed, organisations can reduce the subjective nature of the framework and improve the accuracy and reliability of their risk assessments.
+
+### Qualitative Analysis Using Dread Framework
+
+The DREAD Framework is typically used for Qualitative Risk Analysis, rating each category from one to ten based on a subjective assessment and interpretation of the questions above. Moreover, the average score of all criteria will calculate the overall DREAD risk rating. 
+
+To understand how the scoring works, let's put the concepts into practice by using a good scenario.
+
+A software company has developed a new website and needs to assess the risk associated with various security threats. Your team has created a guideline for scoring each component of the DREAD framework, as shown below:
+
+|DREAD Score|2.5|5|7.5|10|
+|---|---|---|---|---|
+|Damage|Minimal infrastructure information disclosure|Minimal information disclosure related to client data|Limited PII leak|Complete data leak|
+|Reproducibility|Multiple attack vectors requiring technical expertise|Minor customisation for public exploits needed|Little prerequisite technical skills needed to run the exploit|Users with public exploits can successfully reproduce the exploit|
+|Exploitability|Almost no public exploits are available and need customisation of scripts|Complicated exploit scripts available in the wild|Minimal technical skills are required to execute public exploits|Reliable Metasploit module exists|
+|Affected Users|Almost none to a small subset|Around 10% of users|More than half of the user base|All users|
+|Discoverability|The significant effort needed to discover the vulnerability chains for the exploit to work|Requires a manual way of verifying the vulnerability|Public scanning scripts not embedded in scanning tools exist|Almost all known scanning tools can find the vulnerability|
+
+Given this guideline, we can assess some known vulnerabilities in the application. Below is an example of scoring provided for each vulnerability.
+
+1. Unauthenticated Remote Code Execution (Score: 8)
+    
+    - Damage (D): **10**
+    - Reproducibility (R): **7.5**
+    - Exploitability (E): **10**
+    - Affected Users (A): **10**
+    - Discoverability (D): **2.5**
+    
+2. Insecure Direct Object References (IDOR) in User Profiles (Score: 6.5)
+    
+    - Damage (D): **2.5**
+    - Reproducibility (R): **7.5** 
+    - Exploitability (E): **7.5**
+    - Affected Users (A): **10** 
+    - Discoverability (D): **5**
+    
+3. Server Misconfiguration Leading to Information Disclosure (Score: 5)
+    
+    - Damage (D): **0**
+    - Reproducibility (R): **10**
+    - Exploitability (E): **10**
+    - Affected Users (A): **0**
+    - Discoverability (D): **5**
+    
+
+Now what's left is to prioritise the vulnerabilities based on their score and apply mitigations to secure the application.
+
+### Q&A
+
+What DREAD component assesses the potential harm from successfully exploiting a vulnerability?
+
+`Damage`
+
+What DREAD component evaluates how others can easily find and identify the vulnerability?
+
+`Discoverability`
+
+Which DREAD component considers the number of impacted users when a vulnerability is exploited?
+
+`Affected Users`
+
+## Stride Framework
+
+The STRIDE framework is a threat modelling methodology also developed by Microsoft, which helps identify and categorise potential security threats in software development and system design. The acronym STRIDE is based on six categories of threats, namely:
+
+| **Category**               | **Definition**                                                                                     | **Policy Violated** |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | ------------------- |
+| **Spoofing**               | Unauthorised access or impersonation of a user or system.                                          | Authentication      |
+| **Tampering**              | Unauthorised modification or manipulation of data or code.                                         | Integrity           |
+| **Repudiation**            | Ability to deny having acted, typically due to insufficient auditing or logging.                   | Non-repudiation     |
+| **Information Disclosure** | Unauthorised access to sensitive information, such as personal or financial data.                  | Confidentiality     |
+| **Denial of Service**      | Disruption of the system's availability, preventing legitimate users from accessing it.            | Availability        |
+| **Elevation of Privilege** | Unauthorised elevation of access privileges, allowing threat actors to perform unintended actions. | Authorisation       |
+
+As you can see, the table above also provides what component of the CIA triad is violated. The STRIDE framework is built upon this foundational information security concept.
+
+By systematically analysing these six categories of threats, organisations can proactively identify and address potential vulnerabilities in their systems, applications, or infrastructure, enhancing their overall security posture.
+
+To understand the framework better, let's deep-dive into each category and discuss some examples.
+
+- Spoofing 
+    - Sending an email as another user.
+    - Creating a phishing website mimicking a legitimate one to harvest user credentials.
+- Tampering
+    - Updating the password of another user.
+    - Installing system-wide backdoors using an elevated access.
+- Repudiation
+    - Denying unauthorised money-transfer transactions, wherein the system lacks auditing.
+    - Denying sending an offensive message to another person, wherein the person lacks proof of receiving one.
+- Information Disclosure 
+    - Unauthenticated access to a misconfigured database that contains sensitive customer information.
+    - Accessing public cloud storage that handles sensitive documents.
+- Denial of Service  
+    - Flooding a web server with many requests, overwhelming its resources, and making it unavailable to legitimate users.
+    - Deploying a ransomware that encrypts all system data that prevents other systems from accessing the resources the compromised server needs.
+- Elevation of Privilege  
+    - Creating a regular user but being able to access the administrator console.
+    - Gaining local administrator privileges on a machine by abusing unpatched systems.
+
+The examples above illustrate various scenarios in which the categories can occur, emphasising the importance of implementing robust security measures to protect against these threats.
+
+A typical representation of results after using the STRIDE framework is via a checklist table, wherein each use case is marked based on what STRIDE component affects it. In addition, some scenarios may cover multiple STRIDE components.
+
+|**Scenario**|**Spoofing**|**Tampering**|**Repudiation**|**Information Disclosure**|**Denial of Service**|**Elevation of Privilege**|
+|---|---|---|---|---|---|---|
+|**Sending a spoofed email, wherein the mail gateway lacks email security and logging configuration.**|✔||✔||||
+|**Flooding a web server with many requests that lack load-balancing capabilities.**|||||✔||
+|**Abusing an SQL injection vulnerability.**||✔||✔|||
+|**Accessing public cloud storage (such as AWS S3 bucket or Azure blob) that handles customer data**.||||✔|✔||
+|**Exploiting a local privilege escalation vulnerability due to the lack of system updates and modifying system configuration for a persistent backdoor.**||✔||||✔|
+
+### Threat Modelling With STRIDE
+
+To implement the STRIDE framework in threat modelling, it is essential to integrate the six threat categories into a systematic process that effectively identifies, assesses, and mitigates security risks. Here is a high-level approach to incorporating STRIDE in the threat modelling methodologies we discussed.
+
+1. System Decomposition
+    
+    Break down all accounted systems into components, such as applications, networks, and data flows. Understand the architecture, trust boundaries, and potential attack surfaces.
+    
+2. Apply STRIDE Categories
+    
+    For each component, analyse its exposure to the six STRIDE threat categories. Identify potential threats and vulnerabilities related to each category.
+    
+3. Threat Assessment
+    
+    Evaluate the impact and likelihood of each identified threat. Consider the potential consequences and the ease of exploitation and prioritise threats based on their overall risk level.
+    
+4. Develop Countermeasures 
+    
+    Design and implement security controls to address the identified threats tailored to each STRIDE category. For example, to enhance email security and mitigate spoofing threats, implement DMARC, DKIM, and SPF, which are email authentication and validation mechanisms that help prevent email spoofing, phishing, and spamming.
+    
+5. Validation and Verification  
+    
+    Test the effectiveness of the implemented countermeasures to ensure they effectively mitigate the identified threats. If possible, conduct penetration testing, code reviews, or security audits.
+    
+6. Continuous Improvement  
+    
+    Regularly review and update the threat model as the system evolves and new threats emerge. Monitor the effective countermeasures and update them as needed.
+    
+
+By following this approach, you can effectively incorporate the STRIDE framework into your threat modelling process, ensuring a comprehensive analysis of potential security threats.
+
+### Application of STRIDE Framework
+
+To apply the concepts discussed in this task, let's simulate a scenario wherein we can use the STRIDE framework.
+
+Scenario: Your e-commerce company is in the process of designing a new payment processing system. To ensure its security and minimise the risk of compromise, you are tasked to conduct a threat modelling exercise using the STRIDE framework. All your assets are stored in a secure cloud infrastructure developed by your system architects.
+
+As the leader of this initiative, you will be working with different teams to create a thorough threat modelling plan. Together, you aim to identify potential security threats and protect your payment processing system, ensuring the safety of your customers' information.
+
+As a guide, here are the roles and responsibilities of the teams joining the initiative:
+
+|**Team**|**Roles and Responsibilities**|
+|---|---|
+|**Development Team**|Responsible for building systems and applications used by the organisation.|
+|**System Architecture Team**|Responsible for designing the overall architecture of the cloud services used by the organisation.|
+|**Security Team**|Provide expertise on threats, vulnerabilities, and risk mitigation strategies.|
+|**Business Stakeholder Team**|Provides valuable input on critical assets and business processes, and ensures alignment between the initiative and the organisation's strategic goals.|
+|**Network Infrastructure Team**|Manages the organisation's network infrastructure, including servers and critical systems.|
+
+### Q&A
+
+Use the static site lab to start on your preparation for the threat modelling exercises by following the provided instructions. 
+
+<img width="952" height="864" alt="image" src="https://github.com/user-attachments/assets/14f3956b-a277-48d1-9f74-6c07ac18fd1d" />
+
+<img width="947" height="853" alt="image" src="https://github.com/user-attachments/assets/390fb767-d73b-458f-9191-e1d3c882b560" />
+
+What foundational information security concept does the STRIDE framework build upon?
+
+`CIA Triad`
+
+What policy does Information Disclosure violate?
+
+`Confidentiality`
+
+Which STRIDE component involves unauthorised modification or manipulation of data?
+
+`Tampering`
+
+Which STRIDE component refers to the disruption of the system's availability?
+
+`Denial of Service`
+
+Provide the flag for the simulated threat modelling exercise.
+
+`THM{m0d3ll1ng_w1th_STR1D3}`
+
+## Pasta Framework
+
+PASTA, or Process for Attack Simulation and Threat Analysis, is a structured, risk-centric threat modelling framework designed to help organisations identify and evaluate security threats and vulnerabilities within their systems, applications, or infrastructure. PASTA provides a systematic, seven-step process that enables security teams to understand potential attack scenarios better, assess the likelihood and impact of threats, and prioritise remediation efforts accordingly.
+
+This framework was created by Tony UcedaVélez and Marco Morana. They introduced the PASTA framework in their book **"Risk Centric Threat Modeling: Process for Attack Simulation and Threat Analysis"**, published in 2015.
+
+### Seven-Step Methodology
+
+Similar to the high-level process discussed in the previous task, the PASTA framework covers a series of steps, from defining the scope of the threat modelling exercise to risk and impact analysis. Below is an overview of the seven-step methodology of the PASTA Framework:
+
+1. Define the Objectives
+    
+    Establish the scope of the threat modelling exercise by identifying the systems, applications, or networks being analysed and the specific security objectives and compliance requirements to be met.
+    
+2. Define the Technical Scope
+    
+    Create an inventory of assets, such as hardware, software, and data, and develop a clear understanding of the system's architecture, dependencies, and data flows.
+    
+3. Decompose the Application
+    
+    Break down the system into its components, identifying entry points, trust boundaries, and potential attack surfaces. This step also includes mapping out data flows and understanding user roles and privileges within the system.
+    
+4. Analyse the Threats 
+    
+    Identify potential threats to the system by considering various threat sources, such as external attackers, insider threats, and accidental exposures. This step often involves leveraging industry-standard threat classification frameworks or attack libraries.
+    
+5. Vulnerabilities and Weaknesses Analysis  
+    
+    Analyse the system for existing vulnerabilities, such as misconfigurations, software bugs, or unpatched systems, that an attacker could exploit to achieve their objectives. Vulnerability assessment tools and techniques, such as static and dynamic code analysis or penetration testing, can be employed during this step.
+    
+6. Analyse the Attacks  
+    
+    Simulate potential attack scenarios and evaluate the likelihood and impact of each threat. This step helps determine the risk level associated with each identified threat, allowing security teams to prioritise the most significant risks.
+    
+7. Risk and Impact Analysis  
+    
+    Develop and implement appropriate security controls and countermeasures to address the identified risks, such as updating software, applying patches, or implementing access controls. The chosen countermeasures should be aligned with the organisation's risk tolerance and security objectives.
+    
+
+### PASTA Methodology Guidelines  
+
+To effectively implement the PASTA framework and optimise its benefits, you may follow these practical guidelines for each step of the methodology.
+
+|   |   |
+|---|---|
+|**Define the Objectives**|- Set clear and realistic security objectives for the threat modelling exercise.<br>- Identify relevant compliance requirements and industry-specific security standards.|
+|**Define the Technical Scope**|- Identify all critical assets, such as systems and applications, that handle sensitive data owned by the organisation.<br>- Develop a thorough understanding of the system architecture, including data flows and dependencies.|
+|**Decompose the Application**|- Break down the system into manageable components or modules.<br>- Identify and document each component's possible entry points, trust boundaries, attack surfaces, data flows, and user flows.|
+|**Analyse the Threats**|- Research and list potential threats from various sources, such as external attackers, insider threats, and accidental exposures.<br>- Leverage threat intelligence feeds and industry best practices to stay updated on emerging threats.|
+|**Vulnerabilities and Weaknesses Analysis**|- Use a combination of tools and techniques, such as static and dynamic code analysis, vulnerability scanning, and penetration testing, to identify potential weaknesses in the system.<br>- Keep track of known vulnerabilities and ensure they are addressed promptly.|
+|**Analyse the Attacks**|- Develop realistic attack scenarios and simulate them to evaluate their potential consequences.<br>- Create a blueprint of scenarios via Attack Trees and ensure that all use cases are covered and aligned with the objective of the exercise.|
+|**Risk and Impact Analysis**|- Assess the likelihood and impact of each identified threat and prioritise risks based on their overall severity.<br>- Determine the most effective and cost-efficient countermeasures for the identified risks, considering the organisation's risk tolerance and security objectives.|
+
+These guidelines provide a foundation for effectively using the PASTA framework's seven-step methodology. However, adapting and customising the approach according to your organisation's unique needs and requirements is crucial.  
+
+### Benefits of Using the PASTA Framework
+
+This framework, being risk-centric, offers numerous benefits for organisations seeking to enhance their security posture through threat modelling.
+
+- The framework is adaptable to unique objectives and helps organisations align with compliance requirements by systematically identifying and addressing security risks while ensuring proper security controls are in place.
+- Like the other frameworks, PASTA fosters collaboration between stakeholders, such as developers, architects, and security professionals, promoting a shared understanding of security risks and facilitating communication across the organisation.
+- In addition, the PASTA methodology helps organisations meet compliance requirements by systematically identifying and addressing security risks and ensuring that appropriate security controls are in place.
+- Lastly, the primary reason to use PASTA is its comprehensive and systematic process, ensuring a thorough analysis of the entire risk landscape. Organisations can proactively address security risks by employing PASTA, tailoring the seven-step methodology to their unique needs, and maintaining a solid security posture.
+
+### Application of PASTA Framework
+
+To apply the concepts discussed in this task, let's simulate a scenario wherein we can use the PASTA framework.  
+
+Scenario: Your organisation is known for its online banking platform, catering to many users across the Asia Pacific region. To ensure its resiliency to potential threats, you are tasked to conduct a threat modelling exercise using the PASTA framework.
+
+As the leader of this initiative, you will be working with different teams to create a thorough threat modelling plan. Together, you aim to identify potential security threats and protect your online banking platform, ensuring the safety of your customers' information.
+
+As a guide, here are the roles and responsibilities of the teams joining the initiative:
+
+|**Team**|**Roles and Responsibilities**|
+|---|---|
+|**Development Team**|Responsible for building systems and applications used by the organisation.|
+|**System Architecture Team**|Responsible for designing the overall architecture of the cloud services used by the organisation.|
+|**Security Team**|Provide expertise on threats, vulnerabilities, and risk mitigation strategies.|
+|**Business Stakeholder Team**|Provides valuable input on critical assets and business processes, and ensures alignment between the initiative and the organisation's strategic goals.|
+
+### Q&A
+
+In which step of the framework do you break down the system into its components?
+
+`Decompose the Application`
+
+During which step of the PASTA framework do you simulate potential attack scenarios?
+
+`Analyse the Attacks`
+
+In which step of the PASTA framework do you create an inventory of assets?
+
+`Define the Technical Scope`
+
+Provide the flag for the simulated threat modelling exercise.
+
+`THM{c00k1ng_thr34ts_w_P4ST4}`
+
+## Conclusion
+
+Thank you for reading through this write up!

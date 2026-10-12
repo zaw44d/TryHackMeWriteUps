@@ -329,3 +329,91 @@ Click on View Site. Decide whether each of the suggested safeguards (controls) i
 <img width="960" height="874" alt="image" src="https://github.com/user-attachments/assets/85591b55-c8f3-4838-8c27-2efcd991e95c" />
 
 `THM{Excellent_Risk_Management}`
+
+## Monitor Risk
+
+We have assessed the risk and responded with a proper measure; what’s next? We need to keep monitoring risks. Many reasons dictate that we continue to monitor risk, even after an appropriate response has been implemented. The reasons include the following:
+
+- Finding and adding new risks
+- Eliminating risks that are no longer relevant
+- Assessing our responses to existing risks
+
+For the latter, monitoring risks activities requires a focus on the following areas:
+
+- Effectiveness
+- Change
+- Compliance
+
+### Effectiveness Monitoring
+
+Responding to an assessed risk does not mark the end of the story. A solution might be effective now but might become ineffective in the future.
+
+Consider the following example: there is always a risk that employees might use weak passwords, which would threaten the whole network. Specific password complexity requirements are enforced to mitigate this risk. This solution should work excellently, shouldn’t it? However, while monitoring the effectiveness of this measure, you might discover that many employees are resorting to writing their complex passwords on sticky notes. Such discovery shows that the implemented control, i.e., password complexity, has become ineffective.
+
+Without effectiveness monitoring, there is no way to discover whether a control is still effective and whether a risk is still mitigated correctly.
+
+### Monitoring Change
+
+“Change is the only constant in life.” as Heraclitus, a Greek philosopher, is quoted as saying. When it comes to risk monitoring, changes might be due to one of the following:
+
+- Change in business
+- Change in information systems
+
+Business change might include opening new branches, creating new positions, and acquiring other companies. Any business change might introduce new risks and render existing controls invalid.
+
+The more noticeable change is the change in information systems. Adding new equipment or migrating to new systems would introduce new risks. Consequently, monitoring such changes is necessary to assess unknown risks that have arisen.
+
+### Compliance Monitoring
+
+New laws might see light, new regulatory requirements might come into effect, and new policies might be enforced. Although the pace of change is not as fast as in other areas, these are still areas that the risk management team need to keep an eye on and monitor.
+
+Another aspect that needs to be monitored is the audit findings. Failing to address audit findings can result in fines or stir legal action.
+
+### Q&A
+
+You want to confirm whether the new policy enforcing laptop disk encryption is helping mitigate data breach risk. What is it that you are monitoring in this case?
+
+`Effectiveness`
+
+You are keeping an eye on new regulations and laws. What is it that you are monitoring?
+
+`Compliance`
+
+## Supply Chain Risk Management
+
+A supply chain is a sequence of suppliers that lead to the delivery of a product. In information systems, the product can be hardware, software, or service. Consequently, the risk is as follows:
+
+- **Risk associated with hardware**: Depending on the importance of the target, a threat actor can add a hardware Trojan to an electronic device. As with software Trojans, the purpose is to provide unauthorised functionality.
+- **Risk associated with software**: Software Trojans require access to the software to plant it. In the worst-case scenario, the attacker would succeed in adding the Trojan directly to the source code.
+- **Risk associated with services**: The risk can range from downtime to data breaches. A company must ensure that the service provider has a good security program before using its service.
+
+### Example Scenario
+
+Consider the case of an accounting firm. They offer many services, such as reviewing and analysing financial statements, performing audits, and filing tax returns. To be able to carry out these services, example supplies they need include:
+
+- Computers
+- Accounting software
+- Printers
+
+They would also need some way to communicate with their clients, such as email. This firm bought its computers from a local shop that also offers maintenance. They got the accounting software from a company specialising in developing and customising accounting software. Finally, they got email service from one of the leading Internet providers. If we take a closer look at these three suppliers, we notice that they include the following:
+
+- Hardware suppliers, such as computers
+- Software suppliers, such as accounting software
+- Service providers, such as email
+
+Although this accounting firm might follow perfect measures to protect its assets, the risk might creep in from one of the suppliers. Consider the case where a threat actor succeeds at installing a malicious piece of code within the accounting software. Or consider the case where the email provider gets its servers breached and all confidential communications exposed.
+
+## Combining it All
+
+### Q&A
+
+Click on View Site and follow the instructions to retrieve the flag.
+
+<img width="961" height="859" alt="image" src="https://github.com/user-attachments/assets/79c36122-233a-4ffd-90ad-159893e5c5d7" />
+
+<img width="957" height="862" alt="image" src="https://github.com/user-attachments/assets/8b8a85d8-dca9-41d2-9344-d221ab1beda4" />
+
+`THM{OFFICE_RISK_MANAGED}`
+
+Thank you for reading!
+

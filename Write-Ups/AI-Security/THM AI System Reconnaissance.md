@@ -375,21 +375,489 @@ When you run `grpcurl` against 10.10.45.15:8001, what is the name of the inferen
 
 ## Enumerating AI Systems
 
+This is the part of reconnaissance where findings start getting serious.
+
+- **Fingerprinting** tells you "that is an MLflow server."
+- **Enumeration** tells you "that MLflow server contains 4 experiments, 3 production models, artifact URIs pointing to s3://cyphira-ml-models/, and the models were created by J.Chen(AI Enginner) at Cyphira"
+
+One is identification. The other is intelligence.
+
+### MLflow Enumeration
+
+MLflow is the most rewarding service to enumerate because it stores everything in one place and exposes it through a clean REST API. If you find an open MLflow instance, here is the chain you follow.
+
+**Step 1: List all experiments.**
+
+- `` `POST /api/2.0/mlflow/experiments/search` ``
+
+The response returns every experiment on the server with its name and internal ID. Experiment names often reveal project codenames and business objectives: `fraud-detection-v3`, `rag-embeddings-tuning`, `customer-churn-prototype`.
+
+**Step 2: List registered models.**
+
+- `GET /api/2.0/mlflow/registered-models/list`
+
+This returns the full model inventory. Every model the organisation has built and registered. Names, descriptions, and creation timestamps.
+
+**Step 3: Get model version details.**
+
+- `` `GET /api/2.0/mlflow/model-versions/search` ``
+
+This is where it gets serious. The response includes the `source` field, which contains the artifact URI. That URI frequently points to internal cloud storage: `s3://internal-ml-models-corp/experiments/1/artifacts/` or a similar path. It also includes the `user_id` of the data scientist who created each version, creation timestamps, and stage labels showing which models are in production versus staging.
+
+**Step 4: Search training runs.**
+
+- `POST /api/2.0/mlflow/runs/search`
+
+Submit this with an empty body or a filter, and you get back hyperparameters, training metrics, and custom tags. Tags are particularly valuable. Teams use them for internal project codenames, Git commit hashes that link back to proprietary source code, and deployment environment identifiers.
+
+**Step 5: List downloadable artifacts.**
+
+- `` `GET /api/2.0/mlflow/artifacts/list` ``
+
+This lists the actual model files available for download. At this point, you have mapped the organisation's entire ML portfolio through five API calls.
+
+### Inference Server Metadata
+
+**Triton** and **TensorFlow Serving** both expose metadata endpoints that tell you exactly how to talk to the model.
+
+- On Triton `GET /v2/models/<name>/config` the response includes input tensor names, their multi-dimensional shapes, accepted data types (FP32, UINT64, INT8), the maximum batch size, and the backend framework (tensorflow_graphdef, pytorch_libtorch, onnxruntime).
+    - This is the equivalent of getting a complete database schema. It tells an attacker exactly how to format a valid inference request.
+- On TensorFlow Serving `GET /v1/models/<name>/metadata` returns the same kind of input/output tensor specifications, shape, dtype, and name for every input and output the model expects.
+
+### Vector Database Enumeration
+
+Vector databases reveal what data the AI system is working with and which embedding model processes it.
+
+- On **Weaviate**, `GET /v1/meta` returns the server version and installed modules.
+    - `GET /v1/schema` returns every class definition, including property names and the vectoriser module configuration.
+    - That vectoriser field tells you which embedding model the system uses.
+    - Weaviate also exposes `/v1/graphql` for full schema introspection and data querying on unauthenticated instances.
+- On **Qdrant**, `GET /collections` it lists all collection names.
+    - `GET /collections/<name>` returns vector dimensions, the distance metric, and the total point count.
+    - A collection named `internal-hr-policies` with 768-dimensional vectors and 50,000 points tells you a lot about what that RAG system indexes.
+- On **Chroma**, older versions expose `GET /api/v1/collections` without authentication by default.
+
+### Prometheus Metrics as Intelligence
+
+Model servers often expose `/metrics` on a dedicated port (Triton on 8002, TorchServe on 8082). These Prometheus-format endpoints return:
+
+- Model names and version numbers currently loaded
+- Inference request counts and latency percentiles
+- Batch sizes being processed
+- GPU memory utilisation per model
+
+This is passive intelligence. You learn the deployment topology, which models handle the most traffic, how much GPU capacity backs them, and whether the system is under load. All without sending a single request to the inference API itself.
+
+### Debug Interfaces and Information Leakage
+
+FastAPI-based ML services auto-generate `/docs` (Swagger UI) and `/openapi.json`. Both expose the full request/response schema, authentication requirements, and example payloads for every endpoint. Free reconnaissance.
+
+MLflow's GraphQL endpoint  `/graphql` has historically bypassed the REST API's authentication controls. An unauthenticated attacker could query internal resolvers like `mlflowSearchRuns` and `mlflowGetRun`, extracting host machine usernames, source code paths via `mlflow.source.name` tags, and the full project inventory. Appending `?debug=true` or `?verbose=1` to AI gateway endpoints can trigger raw stack traces that reveal filesystem paths, installed library versions, and, occasionally, hardcoded credentials that failed to load from environment variables.
+
+### Jupyter Notebook Enumeration
+
+`GET /api/kernels` on an unauthenticated Jupyter instance returns the names, kernel IDs, and last activity timestamps of running kernels. Enough to infer what code is executing. But the real value is in the notebook cells. Data scientists routinely store cleartext credentials for MLflow (`MLFLOW_TRACKING_USERNAME`, `MLFLOW_TRACKING_PASSWORD`), cloud storage access keys, and Hugging Face tokens directly in their code. This is often the bridge between compromising one service and gaining access to everything else in the stack.
+
+### Case Study: IBM X-Force ML Training Infrastructure Attack Chain
+
+In 2025, [IBM X-Force Red documented](https://securityintelligence.com/x-force/attacking-ml-training-infrastructure/) a complete attack chain that demonstrates exactly what this task teaches.
+
+The attack started with a phishing attempt targeting a data scientist, which gave the attackers access to an Azure ML environment. Inside a Jupyter notebook, they found cleartext MLflow credentials stored in a cell. Using those credentials, they ran MLOKit, a CLI tool built by IBM's X-Force Red team specifically for MLflow reconnaissance.
+
+MLOKit automated the entire enumeration chain. `list-models` to inventory every registered model. `download-model` to pull version metadata and artifact URIs. The tool walked the same API endpoints we covered above, but in an automated sequence. The entire ML portfolio was exfiltrated through standard REST API calls that the MLflow server treated as normal authenticated requests.
+
+The chain went:
+
+- Jupyter notebook (credentials) to MLflow tracking server (model registry) to S3 storage (model artifacts).
+- Three components, each trusting the one before it.
+- The security failure was not a software vulnerability. It was that each service was accessible, and the credentials to connect them were sitting in a notebook cell.
+
+IBM later extended MLOKit to support SageMaker and other platforms, adding modules for `list-notebooks`, `add-notebook-trigger` (for code execution via lifecycle configurations), and `poison-model` (for overwriting model artifacts). The tool is open-source on [GitHub](https://github.com/xforcered/MLOKit).
 
 ### Q&A
 
+Time to extract intelligence from the services I fingerprinted. Open the **Cyphira Data Extractor** agent.
+
+I confirmed that 10.10.45.12 runs MLflow, 10.10.45.15 runs Triton, 10.10.45.18 runs Qdrant, 10.10.45.20 runs Jupyter, and 10.10.45.22 runs MinIO. Now I need to pull everything these services are willing to hand over.
+
+**Step 1: Enumerate MLflow experiments.**
+
+<img width="941" height="357" alt="image" src="https://github.com/user-attachments/assets/f544f8a6-352d-4485-a471-3d32310238c6" />
+
+**Step 2: List registered models.**
+
+<img width="944" height="259" alt="image" src="https://github.com/user-attachments/assets/7629b247-d119-406e-b88c-449fd96c1bae" />
+
+**Step 3: Extract model version details.**
+
+<img width="943" height="348" alt="image" src="https://github.com/user-attachments/assets/d6870aab-cae6-4598-88b3-9cbbe8155551" />
+
+**Step 4: Query Triton model config.**
+
+<img width="936" height="235" alt="image" src="https://github.com/user-attachments/assets/83db20ab-a9f6-49f1-930f-b4319e2973cc" />
+
+**Step 5: Enumerate the vector database.**
+
+<img width="938" height="232" alt="image" src="https://github.com/user-attachments/assets/d25c75e7-8cd5-4d10-a006-5e5cc1df83d5" />
+
+**Step 6: Check the Jupyter notebooks.**
+
+<img width="946" height="632" alt="image" src="https://github.com/user-attachments/assets/dd7a70a5-6381-416e-a2e3-00c16dcc49be" />
+
+What MLflow REST API endpoint would you use to retrieve the artifact storage location for a specific model version?
+
+`/api/2.0/mlflow/model-versions/search`
+
+What is the cleartext password for the MLflow service account stored in the Jupyter notebook on 10.10.45.20?
+
+`cyphira-MLfl0w-2024!`
 
 ## Mapping the AI Attack Surface
 
+### How AI Expands the Traditional Attack Surface
+
+Previously, we catalogued 14 AI components across 20+ ports. Compare that to a traditional web application, which adds roughly 5 ports to a network, but the port count alone is not the full picture.
+
+These services constantly talk to each other. The inference server pulls features from the vector database. The orchestration platform pushes model updates to the registry. Jupyter notebooks connect to everything. Prometheus scrapes metrics from every service. If one component binds to 0.0.0.0 instead of 127.0.0.1, the entire internal mesh becomes reachable.
+
+The security perimeter for an AI deployment is not the external firewall. It extends deep into the internal communication pathways between these services. Overly permissive network policies and the absence of mTLS between data-hungry components are the norm, not the exception.
+
+### Platform Misconfigurations That Attackers Map
+
+Every major ML platform has documented misconfigurations that turn routine deployments into reconnaissance targets.
+
+**MLflow** shipped without authentication by default before version 2.x.
+
+- Even after authentication was added, CVE-2026-2635 revealed that MLflow's `basic_auth.ini` file contained hardcoded default credentials.
+- Attackers running mass port scans on port 5000 could authenticate using these defaults.
+- CVE-2026-2033 went further: a directory traversal flaw in the artifact handler allowed unauthenticated remote code execution.
+- Both scored CVSS 9.8.
+
+**Kubeflow** dashboards are frequently deployed without OIDC authentication and exposed via a basic Kubernetes LoadBalancer or NodePort.
+
+- An unauthenticated user can access the full Kubeflow interface and spawn Jupyter notebooks, which are attached to Kubernetes service accounts with cluster-level permissions.
+- That is a direct path from an open dashboard to container orchestration access.
+
+**TorchServe** exposes a management API on port 8081 that allows dynamic model registration from arbitrary URLs.
+
+- If that port is accessible, an attacker can instruct the server to download and load a malicious .mar (Model Archive) file from an external server.
+- TorchServe executes initialisation code during model loading, so loading a crafted archive achieves remote code execution.
+
+**SageMaker** notebooks with `DirectInternetAccess: Enabled` accept inbound connections from the internet.
+
+- A 2024 cloud security report found that 82% of organisations using SageMaker had at least one notebook configured this way.
+
+### Model Registries: The Highest-Value Target
+
+Let's talk about why an unsecured registry is the single most damaging reconnaissance finding.
+
+A registry does not just store model files. It stores the complete lineage:
+
+- Model names
+- Version history
+- Stage labels (staging, production, archived)
+- Creation timestamps
+- Run IDs linking back to full training metadata
+- Artifact URIs revealing internal cloud storage paths
+- User ID of every contributor
+
+One open registry maps the entire ML product portfolio. IBM X-Force documented the exploitation pattern:
+
+- An attacker finds MLflow credentials in a Jupyter notebook
+- They run MLOKit against the registry
+- Then exfiltrate every model artifact
+
+The registry is the map that tells the attacker where everything else is stored.
+
+### Supply Chain Reconnaissance
+
+AI systems depend heavily on external resources, and those dependencies are discoverable during reconnaissance.
+
+Hugging Face tokens appear in GitHub repositories via simple dorks: `filename:.env HF_TOKEN`.
+
+- They appear in `.env` files, CI/CD pipeline logs, and Kubernetes secrets.
+- A compromised token grants read and write access to the organisation's private models and datasets on the Hugging Face platform.
+
+**Dependency confusion** applies to ML pipelines just as it applies to traditional software.
+
+- ML projects have large `requirements.txt` files with internal package names.
+- If an internal package like `company-data-utils` is not registered on PyPI, an attacker can register it there.
+- Kubeflow pipelines that build containers at training time pull packages live, so a typosquatted or misconfigured package can execute code inside the training cluster.
+
+**Model download sources** are identifiable during reconnaissance.
+
+- If the organisation pulls models from the Hugging Face Hub or the PyTorch Hub, the download paths are visible in configuration files, notebook cells, and container build logs.
+- An attacker who can inject a malicious model into an upstream source (or replace one via a compromised HF token) poisons the entire supply chain.
+
+### MITRE ATLAS Mapping
+
+ ATLAS is modelled after ATT&CK but specifically covers adversarial threats to AI and ML systems. It contains 15 tactics, 66 techniques, and 46 sub-techniques as of late 2025.
+
+Here is how the room's content connects:
+
+| **Room Content**                                                        | **ATLAS Technique**                    |
+| ----------------------------------------------------------------------- | -------------------------------------- |
+| Port scanning for AI services, probing endpoints                        | AML.T0006 (Active Scanning)            |
+| Locating model registries and training artifacts through unsecured APIs | AML.T0007 (Discover ML Artifacts)      |
+| Finding exposed HF tokens and poisoned dependencies                     | AML.T0010 (ML Supply Chain Compromise) |
+| Enumerating LLM configurations and API compatibility                    | AML.T0014 (Discover ML Model Family)   |
+| All of the above, collectively                                          | AML.TA0002 (Reconnaissance tactic)     |
+
+ATLAS techniques are not just labels. They provide a shared vocabulary for communicating findings. When you write a reconnaissance report, mapping each finding to an ATLAS technique ID tells the reader exactly what category of activity you performed and what risk it represents.
+
+### Case Study: ShadowRay Campaign (CVE-2023-48022)
+
+The [ShadowRay campaign](https://www.oligo.security/blog/shadowray-2-0-attackers-turn-ai-against-itself-in-global-campaign-that-hijacks-ai-into-self-propagating-botnet) is the clearest example of how reconnaissance of a single AI component cascades into full infrastructure compromise.
+
+Ray's Job Submission API on port 8265 shipped without authentication by design. Anyscale, the company behind Ray, maintained that Ray should run only within trusted network boundaries and that the lack of authentication was an intentional feature, not a bug. They disputed the CVE. Attackers disagreed.
+
+- Using Shodan, they identified over 230,000 publicly exposed Ray dashboards. Once they found an open dashboard, they submitted malicious jobs through `/api/jobs/` containing multi-stage payloads.
+- The first stage performed reconnaissance on the compromised host: reading `/etc/passwd` to enumerate users and running `printenv` to dump environment variables and harvest AWS IAM tokens and other cloud credentials. Using those stolen credentials, the attackers pivoted laterally across cloud infrastructure.
+- The primary objective was resource theft. The attackers hijacked GPU compute nodes and deployed XMRig cryptocurrency miners. They capped CPU usage at 60% and disguised their processes as legitimate Linux kernel workers to avoid detection.
+
+The ShadowRay 2.0 variant, active from late 2025, added significant sophistication.
+
+- Attackers used LLMs to generate adaptable malware payloads and established persistence through hidden cron jobs and systemd services.
+- They hosted their payloads on GitLab and, when those repositories were taken down, migrated them to GitHub within days.
+- The campaign also deployed sockstress (a TCP exhaustion tool) against production websites, turning the operation into a multi-purpose botnet.
+
+**Why this matters for this room**: _the entire ShadowRay chain started with reconnaissance. Finding an exposed dashboard. Confirming it was Ray. The API was unauthenticated and ready for job submission. One exposed component, discovered through the same techniques we have been practising, led to credential theft, lateral movement, and large-scale resource hijacking._
 
 ### Q&A
 
+The Cyphira Jupyter notebook at 10.10.45.20 contains a Hugging Face token (hf_kR7mXpQvL9nJwT2yBcDfAeGh8iKlMnOp). The internal-kb-embedder model on MLflow references sentence-transformers/all-MiniLM-L6-v2 as its base model. What ATLAS technique ID covers the risk of these exposed supply chain dependencies?
 
+`AML.T0010`
+
+You scanned the Cyphira subnet with nmap, probed endpoints with curl, and extracted metadata from MLflow APIs. All of these activities fall under one overarching ATLAS tactic. What is its ID?
+
+`AML.TA0002`
 
 ## Structured Reconnaissance Methodology and Detection
 
+### The 5 Phases
+
+Think of this as a checklist. It follows the same order we covered in the room, but structured as a process you can run start to finish.
+
+**Phase 1: Passive Reconnaissance**
+
+Before you touch the target network, see what is already publicly visible.
+
+- Search **Shodan**, **Censys**, and **FOFA** for **AI service banners** on the organisation's IP ranges.
+    - They work here:
+        - `port:5000 "MLflow"`,
+        - `port:8888 title:"Home Page - Select or create a notebook"`,
+        - `http.title:"Ray Dashboard"`.
+- Search **GitHub** for **leaked credentials**.
+    - `filename:.env MLFLOW_TRACKING_URI`,
+    - `filename:.env HF_TOKEN`,
+    - `filename:config.json model_name site:github.com`.
+- These turn up _MLflow connection strings_ and _Hugging Face tokens_ more often than you would expect.
+
+Check **arXiv** and **engineering blogs** for published model architectures.
+
+- Teams regularly _publish papers describing the exact frameworks and infrastructure they use_.
+- This maps to ATLAS technique **AML.T0000 (Search for Victim's Publicly Available Research Materials)**.
+
+Check DockerHub and GitHub Container Registry for organisation-named ML images. Public container images frequently contain hardcoded configurations. Look at job postings. A listing for an "MLflow Administrator" or "Kubeflow Platform Engineer" tells you exactly what is deployed.
+
+**Phase 2: Active Scanning**
+
+Target the AI-specific ports from the reference table under **The AI Infrastructure**:
+
+`nmap -p 5000,6333,8000,8001,8002,8080,8265,8500,8501,8888,9000,11434,19530 -sV --script=http-title,http-headers <target>`
+
+That single command covers most ML serving components.
+
+- Pay attention to gRPC services on ports 8001 and 8500 that Nmap may report as generic.
+- Follow up with grpcurl for anything that looks like gRPC.
+- Check for Prometheus metrics endpoints (`/metrics`) on every discovered service.
+- These are often on separate ports (8002 for Triton, 8082 for TorchServe) and leak deployment topology.
+
+**Phase 3: API Fingerprinting**
+
+Run ffuf or feroxbuster with an AI-specific wordlist against every discovered HTTP service. Your wordlist should include:
+
+`/v1/models`  
+`/v2/models`  
+`/v2/health/ready`  
+`/api/2.0/mlflow/experiments/list`  
+`/api/2.0/mlflow/registered-models/list`  
+`/pipeline/apis/v1beta1/pipelines`  
+`/api/serve/deployments/`  
+`/v1/schema`  
+`/v1/meta`  
+`/api/kernels`  
+`/api/contents`  
+`/openapi.json`  
+`/docs`  
+`/graphql`  
+`/metrics`  
+`/api/tags`  
+`/api/show`  
+`/collections`  
+`/healthz`  
+`/ping`
+
+For each endpoint that returns a 200, apply the fingerprinting techniques: check response headers, parse JSON structure, and look at error messages from malformed requests.
+
+**Phase 4: Metadata Extraction**
+
+For every confirmed AI service, run the enumeration chain.
+
+- On **MLflow**: Experiments, registered models, model versions (with artifact URIs and user IDs), training runs, and artifact listings. Five API calls that map the entire ML portfolio.
+- On **Triton** or **TF Serving**: Model config endpoints for tensor specs and framework identification.
+- On **vector databases**: Schema and collection endpoints for data type and embedding model identification.
+- On **Jupyter**: Kernel listings and notebook cell contents for cleartext credentials.
+
+**Phase 5: Supply Chain Review**
+
+Identify model download sources visible in configurations, notebook cells, and container build logs. Check whether internal model artifact buckets (S3, GCS, MinIO) are publicly readable. Audit `requirements.txt` and `Pipfile` contents for internal package names that could be squatted on PyPI. Check container registries for image pull access without credentials.
+
+## Tool Reference
+
+Here is a quick reference for the tools that support each phase:
+
+|   |   |   |
+|---|---|---|
+|**Tool**|**What It Does**|**Phase**|
+|Shodan / Censys / FOFA|Internet-wide search for AI service banners|Phase 1|
+|GitHub search (dorks)|Find leaked credentials and configs in public repos|Phase 1|
+|Nmap (with NSE scripts)|Port discovery and service version detection|Phase 2|
+|grpcurl|Interact with gRPC services, dump protobuf schemas if reflection is enabled|Phase 2|
+|ffuf / feroxbuster|Directory brute-forcing with AI-specific wordlists|Phase 2, 3|
+|curl|Manual HTTP probing, header analysis, error triggering|Phase 3, 4|
+|MLOKit (IBM X-Force Red)|Automated MLflow enumeration and model exfiltration|Phase 4|
+|Nuclei (ProjectDiscovery)|Template-based scanning for known AI service misconfigurations|Phase 2, 3|
+|Agrus Scanner|Purpose-built shadow AI detection with 50+ AI-specific probes across all 65,535 ports|Phase 2|
+
+### What Your Reconnaissance Looks Like From the Other Side
+
+Everything you just learned has a signature in logs. If you understand what your activity looks like to a defender, you become better at both attack and defence.
+
+**Model enumeration pattern**
+
+- A burst of sequential GET requests to `/v2/models` from a single IP. Normal users do not query model listings repeatedly in rapid succession.
+- In a SIEM, this appears as 10-50 requests to the same endpoint within seconds, all from a single source.
+
+**Scripted MLflow access**
+
+-  API calls to `/registered-models/list` and `/model-versions/search` without a corresponding UI session.
+- The MLflow web interface generates specific session cookies and additional requests.
+- Raw API calls without those are a clear indicator of scripted enumeration.
+- This is the exact pattern MLOKit produces.
+
+**Prometheus scraping from outside the monitoring stack.**
+
+-  `/metrics` requests from IPs not in the known monitoring CIDR.
+- Your Prometheus server has a known IP.
+- Anyone else reading those metrics is performing reconnaissance.
+
+**AI-aware port scanning.**
+
+- Port scans that hit 5000, 8000, 8001, 8080, 8265, 8888 in sequence from the same source.
+- That is not a random scan.
+- That is someone running the same Nmap command from Phase 2 of this methodology.
+
+**Path traversal against MLflow artifacts.**
+
+- Requests containing `../` or `%2e%2e%2f` against MLflow artifact endpoints.
+- This signals someone probing for CVE-2026-2033.
+
+**Jupyter access without a session.**
+
+- `/api/kernels` and `/api/contents` requests without a valid session cookie.
+- Either an attacker found the notebook server, or an automated tool is enumerating it.
+
+### Quick Wins for Reducing Your Reconnaissance Surface
+
+These are not full hardening guides. The [AI Threat Modelling Assessment](https://tryhackme.com/room/aithreatmodellingassessment)room covers mitigation in depth. These are the changes you can make today that have the greatest impact on reducing what an attacker can discover.
+
+- Enable MLflow authentication. Set `MLFLOW_TRACKING_USERNAME` and `MLFLOW_TRACKING_PASSWORD`, or deploy behind an authenticating reverse proxy
+- Disable Jupyter's `--allow-root` and `--ip=0.0.0.0` flags in production. Require token authentication. Never bind to 0.0.0.0 without a VPN or ingress-level auth
+- Block AI-specific ports at the network perimeter. Ports 5000, 8000 through 8002, 8080, 8265, 8500/8501, 8888, and 9000 should never be internet-facing without explicit intent
+- Disable Triton's model control endpoint with `--model-control-mode none` in production to prevent unauthenticated model loading and unloading
+- Restrict Prometheus metrics endpoints to your internal monitoring CIDR. The `/metrics` endpoints on Triton (port 8002) and TorchServe (port 8082) expose model names, GPU utilisation, batch sizes, and deployment topology. They should only be reachable from your monitoring stack, not from the general network.
+- Rotate and scope Hugging Face tokens. Use fine-grained tokens with read-only permissions and minimal scope
+- Strip debug headers and verbose error messages from ML service responses before they reach untrusted networks
+- Audit MinIO and S3 bucket policies hosting model artifacts. Model weights should not be in publicly readable buckets
+
+### Case Study: Hugging Face Spaces Breach (June 2024)
+
+_In June 2024, attackers gained unauthorised access to the [Hugging Face Spaces](https://huggingface.co/blog/space-secrets-disclosure) platform and accessed authentication secrets stored by developers in their hosted applications. These secrets included HF tokens that could access private models, datasets, and configurations._
+
+- The breach demonstrated exactly what Phase 1 and Phase 5 of the methodology target.
+- HF tokens stored in application secrets are the same kind of credential that shows up during passive reconnaissance through GitHub dorks, .env files in public repos, and CI/CD pipeline logs.
+- Once an attacker has a valid HF token, they have read and write access to whatever that token is scoped to.
+
+Hugging Face's response mapped directly to the "Quick Wins" list above. They revoked compromised tokens, recommended that all users migrate to fine-grained access tokens with minimal scope, and advised against storing tokens in application secrets where platform compromises could expose them.The lesson is straightforward.
+
+The credentials that Phase 1 passive reconnaissance discovers (GitHub dorks, exposed .env files) are the same credentials that get compromised in platform breaches. Rotating and scoping tokens is not just a best practice. It is the direct countermeasure to both reconnaissance and breach exposure.
 
 ### Q&A
 
+A SIEM log shows requests to /api/2.0/mlflow/registered-models/list from an IP with no corresponding MLflow UI session. What tool's access pattern does this match?
+
+`MLOKit`
+
+What is the single most effective quick win for preventing unauthenticated access to the MLflow tracking server?
+
+`Enable MLflow Authentication`
 
 ## Conclusion
+
+### Mapping to Industry Frameworks
+
+The techniques and findings from this room align with several widely adopted security frameworks. This mapping helps you communicate your reconnaissance results in language that security leaders, auditors, and compliance teams already understand.
+
+**MITRE ATLAS (Adversarial Threat Landscape for AI Systems)**
+
+ATLAS is the primary framework for AI-specific threats. Here is how this room maps:
+
+|Room Content|ATLAS Technique ID|Technique Name|
+|---|---|---|
+|Shodan and GitHub dorks for AI infrastructure|AML.T0000|Active Scanning|
+|Locating model registries and artifacts through unsecured APIs|AML.T0048|Discover ML Artifacts|
+|Finding exposed HF tokens and dependency confusion|AML.T0040|ML Supply Chain Compromise|
+|Enumerating LLM configs and API schema compatibility|AML.T0069|Discover LLM System Information|
+|All reconnaissance activities collectively|AML.TA0002|Reconnaissance (Tactic)|
+
+**MITRE ATT&CK (Enterprise)**
+
+Traditional ATT&CK techniques also apply because AI reconnaissance uses many of the same methods as conventional network assessment:
+
+|Room Content|ATT&CK Technique ID|Technique Name|
+|---|---|---|
+|Port scanning for AI-specific services|T1046|Network Service Scanning|
+|Extracting deployment topology from metrics and metadata|T1592|Gather Victim Host Information|
+|Probing for unauthenticated management interfaces|T1595.002|Vulnerability Scanning|
+|Collecting AI infrastructure intelligence before engagement|TA0043|Reconnaissance (Tactic)|
+
+**OWASP Top 10 for LLM Applications (2025)**
+
+Several OWASP LLM risks directly relate to findings from this room:
+
+|Room Finding|OWASP LLM ID|Risk Name|
+|---|---|---|
+|Exposed MLflow servers, Jupyter notebooks, unauthenticated APIs|LLM05|Improper Output Handling (relates to exposed metadata and information leakage through API responses)|
+|Model artifacts downloadable from unsecured registries|LLM06|Excessive Agency (relates to model access without proper authorisation controls)|
+|Leaked HF tokens, dependency confusion, poisoned model files from public hubs|LLM03|Training Data Poisoning / Supply Chain Vulnerabilities|
+|Default credentials, missing authentication on MLflow and Kubeflow|LLM10|Model Theft (reconnaissance enables direct model exfiltration)|
+
+**NIST AI Risk Management Framework (AI RMF 1.0)**
+
+NIST AI RMF organises AI risk into four functions: Govern, Map, Measure, and Manage. This room's content falls primarily under the Map function:
+
+- **Map 1.1:** AI system components and their interactions are identified. This is exactly what Tasks 2 through 4 accomplish. You cannot assess risk in AI infrastructure you have not discovered.
+- **Map 1.5:** Potential risks of the AI system are assessed. The attack surface mapping in Task 5 directly supports this. Identifying misconfigurations, exposed registries, and supply chain risks is risk assessment at the infrastructure layer.
+- **Map 3.2:** Risks related to third-party AI resources are identified. The supply chain reconnaissance in Task 5 (Hugging Face tokens, PyTorch Hub dependencies, public model registries) maps here.
+- **Measure 2.6:** Processes exist to determine whether AI systems are functioning as intended. The Prometheus metrics and debug interface enumeration from Task 4 support this, as unexpected exposed endpoints indicate systems not functioning as intended from a security perspective.
+
+**NIST Cybersecurity Framework (CSF 2.0)**
+
+The room's content aligns with CSF 2.0's Identify function:
+
+- **ID.AM (Asset Management):** Discovering and inventorying AI infrastructure components across the network. This is the core purpose of the entire room.
+- **ID.RA (Risk Assessment):** Mapping the AI attack surface and identifying misconfigurations that introduce risk.
+
+Thank you for reading through!

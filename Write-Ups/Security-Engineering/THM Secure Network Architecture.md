@@ -179,3 +179,40 @@ What is the VLAN tag ID for interface eth12?
 
 ## Common Secure Network Architecture
 
+With the introduction of VLANs, there is a shift in network architecture design to include security as a key consideration. **Security optimization** and **redundancy** should all be considered when designing a network. Ideally without compromising one component. 
+
+This brings us to the question, how do we properly implement VLANs as a security boundary? Security zones. These define what or who is in a VLAN and how much traffic can travel in and out. 
+
+Depending on whom you speak to, every network architect may have a different approach/opinion to the language or requirements surrounding security zones. In this task, we will immerse you in the most commonly accepted security zone standards, keeping a minimalistic approach to segmentation. 
+
+Below is a table of commonly standardized zones for understanding the terminology. 
+
+| **Zone  <br>**           | **Explanation  <br>**                                                                                                                            | **Examples**                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| External                 | All devices and entities outside of our network or asset control.                                                                                | Devices connecting to a web server        |
+| DMZ (demilitarized zone) | Separates untrusted networks or devices from internal resources.                                                                                 | BYOD, remote users/guests, public servers |
+| Trusted                  | Internal networks or devices. A device may be placed in the trusted zone if there is no confidential or sensitive information.                   | Workstations, B2B                         |
+| Restricted               | Any high-risk servers or databases.                                                                                                              | Domain controllers, client information    |
+| Management               | Any devices or services dedicated to network or other device management. This zone is less commonly seen and can be grouped with the audit zone. | Virtualization management, backup servers |
+| Audit                    | Any devices or services dedicated to security or monitoring. This zone is less commonly seen and can be grouped with management.                 | SIEM, telemetry                           |
+
+While security zones mostly factor in what will happen internally, it is equally important to consider how new traffic or devices will enter the network, be assigned, and interact with internal systems. Most external traffic (HTTP, mail, etc) will stay in the DMZ, but what if remote users need access to an internal resource? We can then easily create rules for resources a user or device can access based on MAC, IP addresses, etc. We can then enforce these rules from network security controls.
+
+Security zones and access controls will physically direct how and where traffic goes. But how is it decided what resources users or devices have access to? Traffic rules are often governed by company security policy or compliance as equally as security controls that determine access permissions. 
+
+### Q&A
+
+From the table above, what zone would a user connecting to a public web server be in?
+
+`External`
+
+From the above table, what zone would a public web server be in?
+
+`DMZ`
+
+From the above table, what zone would a core domain controller be placed in?
+
+`Restricted`
+
+## Network Security Policies and Controls
+

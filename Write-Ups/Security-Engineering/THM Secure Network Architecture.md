@@ -216,3 +216,293 @@ From the above table, what zone would a core domain controller be placed in?
 
 ## Network Security Policies and Controls
 
+Policies aid in defining how network traffic is controlled. A network traffic policy may determine how and if a router will route traffic before other routing protocols are employed. **IEEE** (Institute of Electrical and Electronic Engineers) has standardized a handful of access control and traffic policies, such as QoS (Quality of Service)(802.11e). There are still many other routing and traffic policies that are not standardized by IEEE but are commonly used by all vendors following the same objectives. 
+
+### Traffic Filtering
+
+One of the most common standards of defining traffic filtering is **ACL(s)** (Access Control List(s)). An ACL is used as a loose standard to create a ruleset for different implementations and access control protocols.
+
+An ACL contains **ACE(s)** (Access Control Entry) or rules that define a list's profile based on pre-defined criteria (source address, destination address, etc.) Once defined, we can use an ACL for several vendor-specific implementations. For example, Cisco uses ACLs for traffic filtering, priority or custom queuing, and dynamic access control. 
+
+Formally, traffic filtering provides network security, validation, and segmentation by filtering network traffic based on pre-defined criteria. The see the way in which ACLs can be implemented, I will use the policies offered by VyOS. 
+
+The VyOS access-list policy is the platform’s most basic implementation of filtering. The policy will use ACLs or prefix lists to define the criteria for filtering.
+
+Let’s break down how VyOS creates an ACL and defines the policy.
+
+Create the new access-list policy, defining the ACL number (1 - 2699)
+
+`set policy access-list <acl_number>`
+
+Set the description of the access list.
+
+`set policy access-list <acl_number> description <text>`
+
+Create a new rule (or ACE) under the ACL and define the action of the rule.
+
+`set policy access-list <acl_number> rule <1-65535> action <permit|deny>`
+
+Define criteria or parameters for the rule to enforce/match.
+
+`set policy access-list <acl_number> rule <1-65535> <destination|source> <any|host|inverse-mask|network>`
+
+At this point, we have an ACL and an ACE that is actively being enforced by the router.
+
+Let’s recap, the ACL is defined as an ACL number and is made of separate rules or ACEs that describe the behavior of the ACL. Each ACE can determine the action, destination/source, and the specific address/range to trigger the ACE.
+
+Below is a diagram showing a valid SSH request permitted by the ACL that uses these parameters:
+
+>`set policy access-list 1 rule 1 action permit`
+
+>`set policy access-list 1 rule 1 source 10.10.212.209`
+
+```c
+Internet Protocol Version 4, Src: 10.10.212.209, Dst: 10.10.212.209
+    Protocol: TCP (6)
+    Header checksum: 0xbfdd [validation disabled]
+    [Header checksum status: Unverified]
+    Source: 10.10.212.209
+    Destination: 10.10.212.209
+Transmission Control Protocol, Src Port: 35560, Dst Port: 22, Seq: 1578, Ack: 1670, Len: 148
+    Source Port: 35560
+    Destination Port: 22
+```
+
+Below is a diagram showing an invalid SSH request denied by the ACL with these parameters:
+
+> `set policy access-list 1 rule 1 action deny`
+
+> `set policy access-list 1 rule 1 source 10.10.212.209`
+
+```c
+Internet Protocol Version 4, Src: 10.10.212.209, Dst: 10.10.212.209
+    Protocol: TCP (6)
+    Header checksum: 0xbfdd [validation disabled]
+    [Header checksum status: Unverified]
+    Source: 10.10.212.209
+    Destination: 10.10.212.209
+Transmission Control Protocol, Src Port: 35560, Dst Port: 22, Seq: 1578, Ack: 1670, Len: 148
+    Source Port: 35560
+    Destination Port: 2
+```
+If correctly implemented, the router should now drop or accept packets based on their source or destination address. But is this the best solution? What if we wanted a public web server in the DMZ and ensure that only HTTP traffic originates from it? What if specific hosts need specific protocols to be open on a server? A router can only provide a limited amount of extensibility for security. 
+
+### Q&A
+
+Using the resources below, answer the questions
+
+_Packet #1._
+```bash
+Internet Protocol Version 4, Src: 10.10.212.209, Dst: 10.10.212.209
+    Protocol:TCP (6)
+    Header checksum: 0xbfdd [validation disabled]
+    [Header checksum status: Unverified]
+    Source: 10.10.212.209
+    Destination: 10.10.212.209
+Transmission Control Protocol, Src Port: 35560, Dst Port: 22, Seq: 1578, Ack: 1670, Len: 148
+    Source Port: 35560
+    Destination Port: 22
+```
+
+_ACL Policy #1._
+
+`set policy access-list 1 rule 1 action permit`
+
+`set policy access-list 1 rule 1 source 255.255.255.0`
+
+`set policy access-list 1 rule 1 source 10.10.212.0/24`
+
+_Packet #2._
+
+```bash
+Internet Protocol Version 4, Src: 10.10.212.200, Dst: 10.10.212.209
+    Protocol:TCP (6)
+    Header checksum: 0xbfdd [validation disabled]
+    [Header checksum status: Unverified]
+    Source: 10.10.212.209
+    Destination: 10.10.212.209
+Transmission Control Protocol, Src Port: 35560, Dst Port: 22, Seq: 1578, Ack: 1670, Len: 148
+    Source Port: 35560
+    Destination Port: 2
+```
+_ACL Policy #2._
+
+`set policy access-list 1 rule 1 action deny`
+
+`set policy access-list 1 rule 1 destination 10.10.212.209`
+
+According to the corresponding ACL policy, will the first packet result in a drop or accept?
+
+`Accept`
+
+According to the corresponding ACL policy, will the second packet result in a drop or accept?
+
+`Drop`
+
+## Zone-Pair Policies and Filtering
+
+Network considerations often include size, traffic, and data correlation; when considering protocols and the requirements of a zone, we need to shift our focus toward traffic and correlation. Traffic correlation is standardized as the state of a packet, e.g. (protocol, process, direction, etc.) We must employ a firewall to parse the state of a packet and enforce policies based on that state.
+
+### Firewalls
+
+At the highest level, basic network firewalls are defined in two categories: **stateless** vs. **stateful**. A protocol's category is determined based on its ability to consider the state of a packet. For example, the ACLs used in the previous task would be regarded as a stateless protocol.
+
+A stateful firewall can better correlate information in a network connection. This allows the firewall to filter based on protocols, ports, processes, or other information from a device, etc.
+
+Before configuring a firewall, we need to consider how we can apply the requirements of zones to firewall rules. How can we define different actions based on the protocol and source/destination zone? **Zone-pairs**!
+
+### Zone-Pairs
+
+**Zone-pairs** are a direction-based and stateful policy that will enforce the traffic in single directions per each VLAN, hence, zone-pair. For example, **DMZ → LAN** or **LAN → DMZ.**
+
+Each zone in a given topology must have a different zone-pair for each other in the topology and every possible direction. This approach provides the most visibility from a firewall and drastically improves the filtering capabilities.
+
+Using VyOS as an example, I will configure a firewall for zone-pairing. Before defining each pair's zoning policy, I must add a common name and default action for each VLAN. VLANs are routed through a trunk and divided through sub-interfaces. The syntax is `<interface>.<VLAN #>` e.g. `eth0.30`. 
+
+Below is an example of setting a default action for the DMZ and assigning the VLAN to the common zone name.
+
+1. `set zone-policy zone dmz default-action drop`
+2. `set zone-policy zone dmz interface eth0.30`
+
+Repeat this process for each VLAN interface or zone defined in a network. Now we can begin addressing each zone-pair direction.
+
+![[Pasted image 20261020102951.png]]
+
+Below is an example table of each zone-pair in the above topology and what possible protocols/actions may look like.
+
+| **Zone A** | **Zone B** | **Protocol** | **Action** |
+| ---------- | ---------- | ------------ | ---------- |
+| LAN        | WAN        | ICMP         | Drop       |
+| LAN        | LOCAL      | -            | -          |
+| LAN        | DMZ        | -            | -          |
+| WAN        | LAN        | ICMP         | Accept     |
+| WAN        | LOCAL      | -            | -          |
+| WAN        | DMZ        | -            | -          |
+| LOCAL      | LAN        | -            | -          |
+| LOCAL      | WAN        | -            | -          |
+| LOCAL      | DMZ        | -            | -          |
+| DMZ        | LAN        | HTTP         | Accept     |
+| DMZ        | WAN        | -            | -          |
+| DMZ        | LOCAL      | -            | -          |
+
+This gives us a good understanding of the expected behavior of our network and a good plan to begin configuring the firewall.
+
+**Remember:** Not all traffic is IPv4! Depending on your network configuration, you may also need to configure IPv6 rules!
+
+I will rely on the VyOS configuration to define each rule. Below is an example of the base VyOS ruleset. This should be the same at the top of each ruleset you create.
+
+```c
+name lan-wan {
+  default-action drop
+  enable-default-log
+  rule 1 {
+    action accept
+    state {
+      established enable
+      related enable
+    }
+  }
+  rule 2 {
+    action drop
+    log enable
+    state {
+      invalid enable
+    }
+  }
+}
+```
+
+Now let's add the rule for ICMP.
+
+```c
+rule 100 {
+    action drop # Define the action for the rule
+    log enable # Enable logging to track connection attempts in VyOS
+    protocol ipv4-icmp # Protocol to monitor and enforce the action on
+ }
+```
+Now that we have our first zone-pair ruleset, let's create the rules for the opposite zone-pair direction: WAN → LAN. Below is the ruleset required to allow ICMP traffic.
+
+```c
+name wan-lan {
+  default-action drop
+  enable-default-log
+  rule 1 {
+    action accept
+    state {
+      established enable
+      related enable
+    }
+  }
+  rule 2 {
+    action drop
+    log enable
+    state {
+      invalid enable
+    }
+  }
+	rule 100 {
+    action accept
+    log enable
+    protocol ipv4-icmp
+ }
+}
+```
+The zone-pair is now defined with appropriate actions and states. We can now combine the firewall ruleset with a previously configured zone.
+
+Below is the generic syntax for adding a zone-pair.
+
+`set zone-policy zone <zone A> from <zone B> firewall <name> <ruleset name>`
+
+Below we will set the zone-pair for both the LAN → WAN and WAN → LAN pairs.
+
+1. `set zone-policy zone LAN from WAN firewall name lan-wan`
+2. `set zone-policy zone WAN from LAN firewall name wan-lan`
+
+We should have our first zone-pairs defined and enforced now. To test our new configuration, we can attempt to send a `ping` command in both directions to ensure the firewall is dropping or accepting our ICMP packets.
+### Creating a Zone-Pair from Scratch
+
+We will use a static site and get the flag using the resources below:
+
+| Source | Destination | Protocol | Action | Default Action |
+| ------ | ----------- | -------- | ------ | -------------- |
+| DMZ    | LAN         | HTTP     | Accept | Drop           |
+| DMZ    | WAN         | -        | -      | Drop           |
+| LAN    | DMZ         | ICMP     | Accept | Drop           |
+| WAN    | DMZ         | -        | -      | Drop           |
+
+| Common Name | Interface | Default Action |
+| ----------- | --------- | -------------- |
+| DMZ         | eth0.10   | Drop           |
+| LAN         | eth0.20   | Drop           |
+| WAN         | eth0.30   | Drop           |
+
+What is the flag found after filling in all blanks on the static site?
+
+`THM{M05tly_53cure}`
+
+## Validating Network Traffic
+
+Let's start with a scenario. Your organization has proper zoning and routes in place. A zone-pair between the DMZ and LAN allows an HTTPS connection. Of course, the firewall should accept these connections… How else is Susie supposed to watch Facebook or your azure updates install?
+
+In this scenario, let’s say there is a threat actor that has landed an implant through phishing on a LAN machine. Assuming host defence mechanisms have failed, how can the implant be detected and monitored? If their beacon is using HTTPS through the DMZ. That will look like primarily legitimate traffic to your firewall and analysts.
+
+To solve this issue, we must use SSL/TLS inspection to intercept HTTPS connections.
+
+SSL/TLS Inspection
+
+SSL/TLS inspection uses an **SSL proxy** to intercept protocols, including HTTP, POP3, SMTP, or other SSL/TLS encrypted traffic. Once intercepted, the proxy will decrypt the traffic and send it to be processed by a **UTM** (**U**nified **T**hreat **M**anagement) platform. UTM solutions will employ deep SSL inspection, feeding the decrypted traffic from the proxy into other UTM services, including but not limited to web filters or **IPS** (**I**ntrusion **P**revention **S**ystem), to process the information.
+
+This solution may seem ideal, but what are the downsides? This requires an SSL proxy or MitM (Man-in-the-Middle). Even if a firewall or vendor has already implemented the solution, it will still act as a MitM between your devices and the outside world; what if it intercepts potentially plain-text passwords? A corporation must assess the pros and cons of this solution, dependent on its calculated risk. You could allow all applications that you know are safer to prevent potential cons, but this solution will still have disadvantages. For example, an advances threat actor could route their traffic through a cloud provider or a trusted domain. 
+
+### Q&A
+
+Does SSL inspection require a man-in-the-middle proxy? (Y/N)
+
+`Y`
+
+What platform processes data sent from an SSL proxy
+
+`Unified Threat Management`
+
+## DHCP Snooping

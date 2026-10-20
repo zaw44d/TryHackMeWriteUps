@@ -505,4 +505,70 @@ What platform processes data sent from an SSL proxy
 
 `Unified Threat Management`
 
-## DHCP Snooping
+## Addressing Common Attacks
+
+### DHCP Snooping
+
+Cisco defines this as "a security feature that acts like a firewall between untrusted hosts and trusted DHCP servers". It was introduced to combat **rogue DHCP servers**; it will **validate** and **rate-limit** DHCP traffic as necessary. If a host is untrusted, its traffic will be filtered and rate-limited. 
+
+Although DHCP is a layer three protocol, DHCP snooping operates on the switch at layer two. The switch will store untrusted hosts with leased IP addresses in a **DHCP Binding Database**. The database is used to validate traffic and can be used by other protocols, such as dynamic ARP inspection. 
+
+How does DHCP snooping determine what to do with traffic? Below is a list of conditions the protocol will inspect to determine if a DHCP packet should be dropped:
+
+- Any DHCP packet is received from outside of the network.
+- The source MAC address and DHCP client hardware address do not match.
+- A `DHCPRELEASE` or `DHCPDECLINE` packet is received on an untrusted interface that does not match an interface that the source address already has registered.
+- A DHCP packet that includes a relay agent address that is not `0.0.0.0`
+
+Although recognised by the IEEE in several research papers, there is no standardization of DHCP snooping. That said, it generally does not change between vendors, unlike other protocols.
+
+### Dynamic ARP Inspection
+
+Cisco defined **ARP inspection** as "a security feature that validates **A**ddress **R**esolution **P**rotocol (**ARP**) packets in a network". ARP inspection will **validate** and **rate-limit** ARP packets as necessary; if an ARP packet's MAC and IP address do not match, the protocol will intercept. log, and discard the packet. ARP inspection uses the DHCP binding database filled from DHCP snooping as its list of binding IP addresses.
+
+Below is a diagram showing a valid ARP request that matches both the binding database and request information.
+
+```c
+Address Resolution Protocol (request)
+    Hardware type: Ethernet (1)
+    Protocol type: IPv4 (0x0800)
+    Hardware size: 6
+    Protocol size: 4
+    Opcode: request (1)
+    Sender MAC address: 02:c8:85:b5:5a:aa (02:c8:85:b5:5a:aa)
+    Sender IP address: 10.10.0.1
+    Target MAC address: 00:00:00_00:00:00 (00:00:00:00:00:00)
+    Target IP address: 10.10.239.154 
+```
+
+```c
+Router# show ip dhcp snoop bind 
+MacAddress        IpAddress Lease(sec) Type          VLAN Interface 
+----------------- --------- ---------- ------------- ---- ------------------
+02:c8:85:b5:5a:aa 10.10.0.1 23453      dhcp-snooping 10   GigabitEthernet1/1
+01:02:03:04:05:06 2.2.2.2   69445      dhcp-snooping 20   GigabitEthernet2/1
+```
+
+### Q&A
+
+Where does DHCP snooping store leased IP addresses from untrusted hosts?
+
+`DHCP Binding Database`
+
+Will a switch drop or accept a DHCPRELEASE packet?
+
+`Drop`
+
+Does dynamic ARP inspection use the DHCP binding database? (Y/N)
+
+`Y`
+
+Dynamic ARP inspection will match an IP address and what other packet detail?
+
+`MAC Address`
+
+## Conclusion
+
+we have expanded the common requirements of a well-designed network to include security standards.
+
+Thank you for reading!

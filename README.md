@@ -18,6 +18,7 @@ For all my tryhackme writeups! All topics and associated file will be linked in 
 |---|---|
 |**Governance & Regulation**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Governance%20%26%20Regulation.md">Link to write-up</a>|
 |**Identity and Access Mangement**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Identity%20and%20Access%20Mangement.md">Link to write-up</a>|
+|**Linux System Hardening**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Linux%20System%20Hardening.md">Link to write-up</a>|
 |**Risk Management**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Risk%20Management.md">Link to write-up</a>|
 |**Secure Network Architecture**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Secure%20Network%20Architecture.md">Link to write-up</a>|
 |**Threat Modelling**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/Security-Engineering/THM%20Threat%20Modelling.md">Link to write-up</a>|

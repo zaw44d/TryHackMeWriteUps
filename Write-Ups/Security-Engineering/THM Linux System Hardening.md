@@ -333,3 +333,4 @@ Providing remote access to a system is a very convenient way to access your syst
 
 ### Protecting Against Password Sniffing
 
+Remote access can be achieved through many different protocols and services. Although all modern systems use encrypted protocols, such as the SSH protocol, for remote access, older systems might still use cleartext protocols, such as the Telnet protocol.

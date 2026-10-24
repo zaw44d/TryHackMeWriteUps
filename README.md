@@ -9,7 +9,9 @@ For all my tryhackme writeups! All topics and associated file will be linked in 
 |**AI Forensics**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20AI%20Forensics.md">Link to write-up</a>|
 |**AI System Reconnaissance**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20AI%20System%20Reconnaissance.md">Link to write-up</a>|
 |**AI Threat Modelling**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20AI%20Threat%20Modelling.md">Link to write-up</a>|
+|**AI Threat Modelling Assessment**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20AI%20Threat%20Modelling%20Assessment.md">Link to write-up</a>|
 |**LLM Security**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20LLM%20Security.md">Link to write-up</a>|
+|**Prompt Injection**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Prompt%20Injection.md">Link to write-up</a>|
 |**Securing AI Systems**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Securing%20AI%20Systems.md">Link to write-up</a>|
 
 ## Security Engineering

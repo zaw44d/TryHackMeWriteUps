@@ -159,3 +159,63 @@ What BERT-based classifier developed by Meta is used as an AI-powered input guar
 `Llama Prompt Guard 2`
 
 ## Securing Deployment
+
+Even with guardrails in place, some attacks will get through. Deployment controls ask a different question: **when that happens, what can the model actually do with it?**
+
+EchoLeak and the Cursor RCE weren't just clever injections; they succeeded because the models involved had access to far more than any legitimate task required. An injection that lands in a tightly constrained deployment is an annoyance. The same injection in an over-privileged deployment can become a data breach or code execution event. Limiting that gap is what securing deployment is about. 
+
+### Principle of Least Privilege
+
+The **principle of least privilege** is a foundational concept in traditional security: every component of a system should have only the permissions it needs to do its job, and nothing more. In the context of prompt injection, it determines the **blast radius** when an attack succeeds.
+
+The Slack AI vulnerability is the clearest illustration. The injection itself wasn't the whole story; it worked because the model had access to private channels the attacker had no authorisation to read. A well-scoped deployment would have limited retrieval to content within the user's existing permissions. The injection would still have landed, but it would have had nothing interesting to return.
+
+The same logic applies to any data the model can reach. If a **RAG** system pulls from the entire document corpus regardless of who's asking, a successful injection gets access to all of it. Scoping retrieval to what the current user is actually entitled to see means the model can only leak what they could have accessed anyway, a much smaller problem. This is also where **trust boundaries** become a deployment concern: the separation between what the model treats as instructions versus data isn't just a prompting pattern; it's something that needs to be enforced at the architecture level, in how retrieval is scoped, how external content is passed in, and what the model is permitted to act on.
+
+Every permission you don't grant is a capability the attacker can't exploit, regardless of how good their injection is.
+
+### LLM05:2025 - Improper Output Handling
+
+The assumption baked into most LLM integrations is that the model's response is the end of the pipeline: generate, display, done. But in practice, that output goes somewhere, rendered in a browser, passed to a database query, handed to a function call, embedded in an email template. If it arrives unsanitised, the model's response becomes executable in whatever context receives it. An attacker doesn't need to breach your infrastructure directly; they just need to manipulate the model into generating a payload that your own systems trust and execute. OWASP calls this **Improper Output Handling (LLM05:2025)**, and the downstream consequences are classic security vulnerabilities, now executed through a new attack path:
+
+- LLM-generated JavaScript rendered in a browser → **XSS**
+- LLM-generated SQL executed without parameterisation → **SQLi**
+- LLM output passed directly to `exec()` or shell functions → **RCE**
+
+This is precisely the job of the output guardrail layer, intercepting what the model produces before it reaches a downstream system that will act on it. In practice, that means treating model output with the same **zero-trust** posture as user input: validate structure, sanitise content, encode before rendering, and enforce strict schemas on tool and function calls so malformed or unexpected outputs are rejected before execution.
+
+### Rate Limiting, Logging and Monitoring
+
+No defence layer catches everything. **Rate limiting**, **logging**, and **monitoring** are how you find out when something slips through. Rate limiting constrains the damage window, throttling token consumption and flagging anomalous patterns like repeated override attempts phrased differently. Logging every request and response creates the **audit trail** needed to reconstruct what happened. Monitoring for unusual output behaviour (unexpected data volumes, outputs that resemble exfiltration payloads) helps catch occurrences that might otherwise go unnoticed.
+
+These controls don't prevent attacks. They ensure that when prevention fails, you find out about it and can adapt your security posture to avoid similar attacks in the future.
+
+### Q&A
+
+What foundational security principle states that every component should have only the permissions it needs to perform its job?
+
+`Principle of Least Privilege`
+
+What is the OWASP identifier for the vulnerability caused by unsanitised LLM output being passed to downstream systems?
+
+`LLM05:2025`
+
+What classic web vulnerability can result from LLM-generated JavaScript being rendered in a browser without sanitisation?
+
+`XSS`
+
+## Bypassing Guardrails
+
+What is the flag?
+
+`THM{fbu349b3u4b934byr93b}`
+
+## Conclusion
+
+- **LLM security is probabilistic, not binary.** Attacks succeed by shifting probability distributions, which means defences must be layered rather than absolute.
+- **A hardened system prompt is the first line of defence**, using tight scoping, explicit refusal instructions, and structural separation from user input, but it cannot stand alone.
+- **Guardrails** filter malicious inputs before they reach the model and catch dangerous outputs before they leave, but can be bypassed through obfuscation and indirect injection.
+- **Deployment controls** limit what a compromised model can actually do, applying least privilege to tool access, data retrieval, and permissions to shrink the blast radius of a successful attack.
+- **Rate limiting, logging, and monitoring** ensure that when attacks slip through, they are detected, investigated, and used to strengthen future defences.
+
+Thank you for reading through my write-up!

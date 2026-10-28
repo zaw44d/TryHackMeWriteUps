@@ -214,15 +214,21 @@ Using the static site provided I will evaluate models on a repository page.
 
 In the static site, what is the name of the unverified organisation that uploaded the model?
 
-Check
+<img width="945" height="861" alt="image" src="https://github.com/user-attachments/assets/43922b61-567c-4f75-8455-dae93dfe08ee" />
+
+`trustworthy-ai-models`
 
 How many downloads does this model have (last month)?
 
-Check
+<img width="948" height="526" alt="image" src="https://github.com/user-attachments/assets/9827d857-0336-4874-bda3-fecd4ea09034" />
+
+`127`
 
 What file format does the verified model (google-bert/bert-base-uncased) use for its weights?
 
-Check
+<img width="932" height="260" alt="image" src="https://github.com/user-attachments/assets/1bdd0b3b-e8f9-48ea-82a7-2d916ed5f806" />
+
+`safetensors`
 
 ## Conclusion
 

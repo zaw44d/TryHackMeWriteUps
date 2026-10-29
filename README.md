@@ -15,6 +15,8 @@ For all my tryhackme writeups! All topics and associated file will be linked in 
 |**Prompt Defence**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Prompt%20Defence.md">Link to write-up</a>|
 |**Prompt Injection**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Prompt%20Injection.md">Link to write-up</a>|
 |**Securing AI Systems**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Securing%20AI%20Systems.md">Link to write-up</a>|
+|**Supply Chain Attack Vectors**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Supply%20Chain%20Attack%20Vectors.md">Link to write-up</a>|
+|**Understanding AI Supply Chains**|<a href="https://github.com/zaw44d/TryHackMeWriteUps/blob/main/Write-Ups/AI-Security/THM%20Understanding%20AI%20Supply%20Chains.md">Link to write-up</a>|
 
 ## Security Engineering
 

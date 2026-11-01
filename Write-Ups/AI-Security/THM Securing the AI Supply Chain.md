@@ -220,3 +220,215 @@ Open the Telemetry terminal. How many layers does the compromised model's archit
 `5`
 
 ## Architecture Inspection
+
+The architecture telemetry flagged a Lambda layer and classified it as `SUSPICIOUS`. That tells you something is there and warrants review. It does not tell you what the layer actually does: what code it runs, or what it is configured to execute. These VM tools give you that second level of detail: confirm the finding statically and read the function.
+
+ModelScan includes a dedicated scanner (`H5LambdaDetectScan`) for this. Run it on the suspicious Keras model:
+
+Example Terminal
+
+```shell-session
+analyst@tryhackme-2204:~$ modelscan -p /opt/supply-chain/models/image_classifier_v2.h5
+```
+
+**Expected output:**
+
+```bash
+--- Summary ---
+
+Total Issues: 1
+
+Total Issues By Severity:
+
+    - LOW: 0
+    - MEDIUM: 1
+    - HIGH: 0
+    - CRITICAL: 0
+
+--- Issues by Severity ---
+
+--- MEDIUM ---
+
+Unsafe operator found:
+  - Severity: MEDIUM
+  - Description: Use of unsafe operator 'Lambda' from module 'Keras'
+  - Source: /opt/supply-chain/models/image_classifier_v2.h5
+```
+
+Notice the severity is `MEDIUM`, not `CRITICAL`. A Lambda layer is suspicious but not definitively malicious; there are legitimate uses in normal model development. The scanner flags it for review rather than quarantine.
+
+For deeper inspection, examine the model's layer architecture with `h5py`, which reads the `.h5` file structure without loading or executing the model:
+
+```bash
+analyst@tryhackme-2204:~$ python3 /opt/supply-chain/tools/inspect_h5_model.py /opt/supply-chain/models/image_classifier.h5
+```
+
+Now inspect the second model:
+
+```bash
+analyst@tryhackme-2204:~$ python3 /opt/supply-chain/tools/inspect_h5_model.py /opt/supply-chain/models/image_classifier_v2.h5
+```
+
+Compare the two outputs. One model has more layers than the other. Look for any layer marked with `[WARNING]` rather than `[OK]`. In a real attack, the attacker might disguise the function name as something innocuous, such as `normalize_output` or `apply_scaling`. Any Lambda or custom layer in a model you did not build yourself warrants investigation.
+
+**Key takeaway:** SafeTensors eliminates pickle-based code execution but does **not** protect against architecture-level attacks. A model with a malicious Lambda layer will behave identically regardless of whether it is stored as `.h5`, `.keras`, or SafeTensors. Scanning the serialisation format is necessary but insufficient; you must also inspect the model's architecture.
+
+### Q&A
+
+Run `inspect_h5_model.py` on `image_classifier_v2.h5`. What is the name of the suspicious Lambda layer?
+
+`manipulate_output`
+
+## Dependency Auditing and SBOMs
+
+### Version Pinning
+
+Always pin exact versions in your `requirements.txt`. When you list a package without a version (just `numpy`), pip fetches the latest available version from PyPI every time you install. If an attacker publishes a malicious update as the newest version, every unpinned installation pulls it automatically:
+
+```bash
+# BAD: allows any version
+numpy
+requests
+
+# BETTER: pins major.minor but allows patches
+numpy>=1.24,<1.25
+requests>=2.31,<2.32
+
+# BEST: pins exact version
+numpy==1.24.3
+requests==2.31.0
+```
+
+### Lockfiles
+
+Version pinning fixes the version number, but a lockfile goes further: it records the exact version _and cryptographic hash_ of every installed package. This means even if an attacker replaces a package on PyPI with the same version number but different contents, the hash mismatch will block installation. Two popular tools generate lockfiles:
+
+|Tool|Lockfile|Command|
+|---|---|---|
+|**pip-compile** (pip-tools)|`requirements.txt` with hashes|`pip-compile --generate-hashes`|
+|**Poetry**|`poetry.lock`|`poetry lock`|
+
+A lockfile ensures that every team member and CI/CD pipeline installs **identical** packages, eliminating the window for dependency confusion or version manipulation.
+
+### pip-audit: Vulnerability Scanning
+
+**pip-audit** checks your project's dependencies against known vulnerability databases. Run it on the sample ML project:
+
+```bash
+analyst@tryhackme-2204:~$ pip-audit -r /opt/supply-chain/project/requirements.txt
+```
+
+The output lists every known vulnerability for each package in the project. Each row shows the package name, installed version, advisory ID, and the version that fixes the issue. Note how many distinct **packages** have known vulnerabilities, not just the total count of individual CVEs (which changes as new advisories are published). Upgrading to the fixed versions listed in the output eliminates these known risks.
+
+### Private Package Indices
+
+For organisations with internal packages, the strongest defence against dependency confusion is a **private package index**. This ensures pip never resolves internal package names against public PyPI.
+
+The concept is simple: configure pip to use your private index as the primary source:
+
+```bash
+# ~/.pip/pip.conf
+[global]
+index-url = https://your-private-pypi.company.com/simple/
+extra-index-url = https://pypi.org/simple/
+```
+
+With this configuration, pip checks your private index first. If an internal package exists there, it will never look at public PyPI, eliminating the dependency confusion vector entirely.
+
+The distinction matters: `index-url` sets the **primary** index; pip checks it first. `extra-index-url` adds a **fallback** that pip checks only when the primary does not have the package. By placing your private registry as `index-url` and public PyPI as `extra-index-url`, internal packages always resolve privately. In practice, this requires private registry infrastructure, a common investment for teams handling sensitive or proprietary models.
+
+### What Is an SBOM?
+
+A **Software Bill of Materials (SBOM)** is an ingredient list for your software. Just as food packaging lists every ingredient and its source, an SBOM lists every component in your project: packages, libraries, frameworks, and their versions.
+
+Why do they matter? When a new vulnerability is disclosed (like Log4Shell in 2021), an SBOM lets you instantly determine whether your project is affected, instead of scrambling through dependency trees manually. This visibility extends to **transitive dependencies**: packages that your direct dependencies pull in, which might otherwise go completely unnoticed. 
+
+#### SBOM Formats
+
+Two formats dominate the industry:
+
+|Format|Maintained By|Strengths|
+|---|---|---|
+|**SPDX**|Linux Foundation|Strong licence compliance focus, ISO standard (ISO/IEC 5962:2021)|
+|**CycloneDX**|OWASP|Security-focused, includes vulnerability data, lightweight|
+
+Both formats are widely supported by scanning and compliance tools. Choose based on your organisation's primary concern: licence compliance (SPDX) or security (CycloneDX).
+
+Licensing is itself a supply chain risk. AI projects pull in models, datasets, and frameworks under diverse licences. A model trained on restrictively-licensed data may impose obligations on your application, and a copyleft dependency can force you to open-source your entire project simply because one library you pulled in requires it. SBOMs make this manageable by mapping every component to its licence terms, so automated tools can flag incompatibilities before deployment.
+
+#### ML-Specific SBOM Considerations
+
+Standard SBOMs cover software packages, but ML projects also depend on **models** and **datasets**, artefacts that traditional SBOMs do not capture. Emerging work on **ML SBOMs** extends the concept to include model provenance (who trained it, on what data, with what framework), dataset lineage (source, transformations, and known biases), and model performance metrics, along with known limitations.
+
+### Q&A
+
+What is the recommended practice for specifying package versions in requirements.txt?
+
+`Version Pinning`
+
+What tool scans Python dependencies against known vulnerability databases?
+
+`pip-audit`
+
+Which SBOM format is maintained by OWASP and focuses on security?
+
+`CycloneDX`
+
+## API Provider Assessment
+
+When your application calls a third-party LLM provider (OpenAI, Anthropic, or an aggregator like OpenRouter), the tools from Tasks 4-8 do not apply. Fickling, ModelScan, pip-audit, and Syft all assume you have a file on disk. When you call an API, there is no file. You are trusting the entire provider pipeline: training data you cannot inspect, fine-tuning decisions you cannot verify, infrastructure you do not control, and versioning practices that may change the model behind your endpoint without notice. There is no checksum to compare. If you also use system prompt templates sourced from external repositories, those templates become supply chain artefacts the moment you integrate them. Supply chain risks take a different form, but they are just as real.
+### Defence 1: Provider Due Diligence
+
+Before integrating a third-party LLM, assess the provider's security posture:
+
+|Factor|What to Verify|Red Flag|
+|---|---|---|
+|**Data handling**|Privacy policy, data retention, training opt-out|"We may use your data to improve our models" with no opt-out|
+|**Model versioning**|Versioned endpoints, deprecation notices, and changelogs|Model changes without notification|
+|**Security certifications**|SOC 2, ISO 27001, penetration testing|No published security documentation|
+|**Incident response**|Disclosed vulnerabilities, response timeline|No security contact or disclosure policy|
+|**Transparency**|Model cards, training data documentation, and system prompt handling|Undocumented model behaviour changes|
+
+### Defence 2: Behaviour Monitoring
+
+Since you cannot inspect API-served model weights, monitor the model's **outputs** instead. Establish a behavioural baseline by running a fixed set of test prompts periodically and flagging significant changes in responses. A shift could indicate the provider updated the model behind the same endpoint. Track factual accuracy, response format, and refusal rates over time to catch output quality degradation. Sudden changes in latency or error rates may signal infrastructure modifications on the provider's side.
+
+This is the API equivalent of checksum verification: you cannot verify the file, so you verify the behaviour.
+
+### Defence 3: System Prompt Governance
+
+System prompts are increasingly shared, reused, and sourced from public repositories. A system prompt template is a supply chain artefact. If it comes from an untrusted source, it can alter your application's behaviour in ways you did not intend. Treat system prompts with the same rigour as code: version-control them, review changes through your standard process, and test prompt changes against your behavioural baseline before deployment.
+
+### Defence 4: Sandboxed Evaluation
+
+For downloaded models, you scan the weights before loading. For API-served models, the model is a black box. The primary mitigation is **dynamic evaluation in an isolated sandbox.** Before integrating any third-party LLM into production, test it against a fixed set of prompts with known-correct answers, send adversarial probes to test safety boundaries, and compare outputs against any existing model you are replacing. A model that fails these checks is not ready for production.
+
+Do not rely solely on published benchmarks. A model can be fine-tuned to perform well on standard safety evaluations while containing targeted backdoors that activate only on specific inputs. Your own evaluation, tailored to your use case, is the only benchmark you can trust.
+
+|Phase|Activity|Pass Condition|
+|---|---|---|
+|1|Load in an isolated sandbox|Model loads without errors in an air-gapped environment|
+|2|Fixed prompt battery|Answers match known-correct responses|
+|3|Adversarial probes|Safety boundaries hold under adversarial input|
+|4|Baseline comparison|Output distribution matches the existing model|
+|**Result**|**Promote or reject**|All phases pass → Production; any fail → Reject|
+
+### Q&A
+
+What should you establish to detect when an API provider silently updates their model?
+
+`Behavioural Baseline`
+
+What type of artefact should be version-controlled and reviewed like code, to prevent untrusted content from altering LLM behaviour?
+
+`System Prompts`
+
+What company name does Config B identify as the service provider?
+
+`TryTrainML`
+
+## Conclusion
+
+Verify provenance, inspect before you trust, and monitor for changes. A model that passes one check has not passed all of them. A file that passes its checksum can still carry a payload. An API that looks identical today may behave differently tomorrow.
+
+Thank you for reading!
